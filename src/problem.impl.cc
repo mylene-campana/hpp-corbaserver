@@ -60,6 +60,8 @@
 #include "problem.impl.hh"
 #include "tools.hh"
 
+#define BILLION 1E9
+
 using hpp::model::ObjectVector_t;
 using hpp::model::CenterOfMassComputation;
 using hpp::model::CenterOfMassComputationPtr_t;

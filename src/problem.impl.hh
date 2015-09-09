@@ -147,7 +147,7 @@ namespace hpp
 
 	virtual Short numberPaths () throw (hpp::Error);
 
-	virtual void optimizePath (UShort pathId) throw (hpp::Error);
+	virtual CORBA::Double optimizePath (UShort pathId) throw (hpp::Error);
 
 	virtual Double pathLength (UShort pathId) throw (hpp::Error);
 

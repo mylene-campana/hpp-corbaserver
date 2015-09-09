@@ -51,6 +51,8 @@
 #include "problem.impl.hh"
 #include "tools.hh"
 
+#define BILLION 1E9
+
 using hpp::model::ObjectVector_t;
 
 using hpp::constraints::DistanceBetweenBodies;
@@ -866,9 +868,14 @@ namespace hpp
       CORBA::Double Problem::solve () throw (hpp::Error)
       {
 	try {
-          std::clock_t start = std::clock ();
+          //std::clock_t start = std::clock ();
+	  struct timespec start, end;
+	  clock_gettime(CLOCK_MONOTONIC, &start);
 	  problemSolver_->solve();
-          return (double)(std::clock () - start) / (double) CLOCKS_PER_SEC;
+	  clock_gettime(CLOCK_MONOTONIC, &end);
+	  return end.tv_sec - start.tv_sec +
+	    (end.tv_nsec - start.tv_nsec) / BILLION;
+          //return (double)(std::clock () - start) / (double) CLOCKS_PER_SEC;
 	} catch (const std::exception& exc) {
 	  throw hpp::Error (exc.what ());
 	}
@@ -925,7 +932,7 @@ namespace hpp
 
       // ---------------------------------------------------------------
 
-      void Problem::optimizePath(UShort pathId) throw (hpp::Error)
+      CORBA::Double Problem::optimizePath (UShort pathId) throw (hpp::Error)
       {
 	try {
 	  if (pathId >= problemSolver_->paths ().size ()) {
@@ -935,7 +942,14 @@ namespace hpp
 	    throw std::runtime_error (oss.str ());
 	  }
 	  PathVectorPtr_t initial = problemSolver_->paths () [pathId];
+	  //std::clock_t start = std::clock ();
+	  struct timespec start, end;
+	  clock_gettime(CLOCK_MONOTONIC, &start);
 	  problemSolver_->optimizePath (initial);
+	  clock_gettime(CLOCK_MONOTONIC, &end);
+	  return end.tv_sec - start.tv_sec +
+	    (end.tv_nsec - start.tv_nsec) / BILLION;
+	  //return (double)(std::clock () - start) / (double) CLOCKS_PER_SEC;
 	} catch (const std::exception& exc) {
 	  throw hpp::Error (exc.what ());
 	}

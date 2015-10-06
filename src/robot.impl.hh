@@ -208,6 +208,11 @@ namespace hpp
         addPartialCom (const char* comName, const Names_t& jointNames)
           throw (hpp::Error);
 
+	virtual hpp::floatSeq*
+        computeGlobalPosition (const Double* transform,
+			       const hpp::floatSeq& positionInJoint)
+          throw (hpp::Error);
+
       private:
 	CollisionObjectPtr_t getObjectByName (const char* name);
 	typedef std::map <std::string, JointPtr_t> JointMap_t;

@@ -1398,6 +1398,32 @@ namespace hpp
         comc->computeMass ();
         problemSolver_->addCenterOfMassComputation (std::string (comName), comc);
       }
+
+      // --------------------------------------------------------------------
+
+      hpp::floatSeq* Robot::computeGlobalPosition (const Double* transform,
+						   const hpp::floatSeq& positionInJoint) throw (hpp::Error)
+      {
+	hpp::floatSeq *dofArray;
+	try {
+	  DevicePtr_t robot = problemSolver_->robot ();
+	  if (!robot)  throw hpp::Error ("no robot");
+	  vector3_t posInJoint;
+	  for(size_type i=0; i<3; i++)
+	    posInJoint [i] = positionInJoint[(CORBA::ULong) i];
+	  Transform3f t3f;
+	  hppTransformToTransform3f (transform, t3f);
+	  const vector3_t globalPos = t3f.transform (posInJoint);
+	  dofArray = new hpp::floatSeq();
+	  dofArray->length(3);
+	  for(size_type i=0; i<3; i++)
+	    (*dofArray)[(CORBA::ULong) i] = globalPos [i];
+	  return dofArray;
+	} catch (const std::exception& exc) {
+	  throw Error (exc.what ());
+	}
+      }
+
     } // end of namespace impl.
   } // end of namespace corbaServer.
 } // end of namespace hpp.

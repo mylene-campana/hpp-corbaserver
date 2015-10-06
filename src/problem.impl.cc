@@ -897,16 +897,54 @@ namespace hpp
 	  }
 	  SteeringMethodPtr_t sm = problemSolver_->problem ()->steeringMethod ();
 	  PathPtr_t dp = (*sm) (*start, *end);
+	  PathPtr_t unused;
+	  PathValidationReportPtr_t report;
+	  if (!problemSolver_->problem()->pathValidation ()->validate
+	      (dp, false, unused, report)) {
+	    std::ostringstream oss; oss << *report;
+	    throw hpp::Error (oss.str ().c_str ());
+	  }
 	  // Add Path in problem
 	  PathVectorPtr_t path
 	    (core::PathVector::create (dp->outputSize (),
 				       dp->outputDerivativeSize ()));
 	  path->appendPath (dp);
 	  problemSolver_->addPath (path);
+	} catch (const std::exception& exc) {
+	  throw hpp::Error (exc.what ());
+	}
+      }
+
+      // ---------------------------------------------------------------
+
+      void Problem::appendDirectPath (UShort pathId,
+				      const hpp::floatSeq& config)
+	throw (hpp::Error)
+      {
+	try {
+	  if (pathId >= problemSolver_->paths ().size ()) {
+	    std::ostringstream oss ("wrong path id: ");
+	    oss << pathId << ", number path: "
+		<< problemSolver_->paths ().size () << ".";
+	    throw std::runtime_error (oss.str ());
+	  }
+	  PathVectorPtr_t path = problemSolver_->paths () [pathId];
+	  Configuration_t start (path->end ());
+	  ConfigurationPtr_t end (floatSeqToConfig (problemSolver_, config));
+	  if (!problemSolver_->problem ()) {
+	    problemSolver_->resetProblem ();
+	  }
+	  SteeringMethodPtr_t sm
+	    (problemSolver_->problem ()->steeringMethod ());
+	  PathPtr_t dp = (*sm) (start, *end);
 	  PathPtr_t unused;
 	  PathValidationReportPtr_t report;
-	  problemSolver_->problem()->pathValidation ()->validate
-	    (dp, false, unused, report);
+	  if (!problemSolver_->problem()->pathValidation ()->validate
+	      (dp, false, unused, report)) {
+	    std::ostringstream oss; oss << *report;
+	    throw hpp::Error (oss.str ().c_str ());
+	  }
+	  path->appendPath (dp);
 	} catch (const std::exception& exc) {
 	  throw hpp::Error (exc.what ());
 	}

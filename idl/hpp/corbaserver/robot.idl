@@ -384,6 +384,15 @@ module hpp
     /// Get the name of the current robot.
     string getRobotName () raises (Error);
     /// \}
+    
+    /// Project given configuration on the nearest obstacle, completing
+    /// the 'direction' data of the configuration with the plane normal
+    /// \param workspaceDim is the dimension of the workspace (typically 2 or 3)
+    /// \param dist is the shift distance to move the robot away from the
+    /// obstacle.
+    floatSeq projectOnObstacle (in floatSeq dofArray,
+				in short workspaceDim,
+				in double dist) raises (Error);
   };
   };
 };

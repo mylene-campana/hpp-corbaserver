@@ -20,6 +20,7 @@
 #include <hpp/model/object-factory.hh>
 #include <hpp/model/object-iterator.hh>
 #include <hpp/model/collision-object.hh>
+#include <hpp/model/configuration.hh>
 #include <hpp/model/center-of-mass-computation.hh>
 #include <hpp/core/basic-configuration-shooter.hh>
 #include <hpp/core/config-validations.hh>
@@ -38,6 +39,7 @@ namespace hpp
       namespace
       {
 	using hpp::corbaserver::jointBoundSeq;
+	using model::displayConfig;
 
 	static void localSetJointBounds(const JointPtr_t& joint,
 					const jointBoundSeq& jointBounds)
@@ -862,8 +864,8 @@ namespace hpp
 	  config [iDof] = dofArray[(CORBA::ULong) iDof];
 	}
 	// fill the vector by zero
-	hppDout (info, "config dimension: " <<configDim
-		 <<",  deviceDim "<<deviceDim);
+	/*hppDout (info, "config dimension: " <<configDim
+		 <<",  deviceDim "<<deviceDim);*/
 	if(configDim != deviceDim){
 	  throw hpp::Error ("dofVector Does not match");
 	}
@@ -1450,6 +1452,121 @@ namespace hpp
 	} catch (const std::exception& exc) {
 	  throw hpp::Error (exc.what ());
 	}
+      }
+
+// --------------------------------------------------------------------
+      
+      hpp::floatSeq* Robot::projectOnObstacle (const hpp::floatSeq& dofArray,
+					       const Short workspaceDim,
+					       const Double dist)
+        throw (hpp::Error)
+      {
+	Configuration_t q = dofArrayToConfig (problemSolver_, dofArray);
+	fcl::Vec3f pi, pj, dir;
+	Double minDistance = std::numeric_limits <Double>::infinity();
+	Double distance = minDistance;
+	DevicePtr_t robot = problemSolver_->robot ();
+
+	robot->currentConfiguration (q);
+	robot->computeForwardKinematics ();
+	const DistanceBetweenObjectsPtr_t& distanceBetweenObjects =
+	  problemSolver_->distanceBetweenObjects ();
+	distanceBetweenObjects->computeDistances ();
+	const DistanceResults_t& dr =
+	  distanceBetweenObjects->distanceResults ();
+
+	for (model::DistanceResults_t::const_iterator itDistance = 
+	       dr.begin (); itDistance != dr.end (); itDistance++) {
+	  distance = itDistance->distance ();
+	  if (distance < minDistance){
+	    minDistance = distance;
+	    pi = itDistance->closestPointInner (); // point Body
+	    pj = itDistance->closestPointOuter (); // point Obst
+	    dir = pi - pj; // obstacle normale direction
+	  }
+	}
+	hppDout (info, "minDistance: " << minDistance);
+	hppDout (info, "pi: " << pi);
+	hppDout (info, "pj: " << pj);
+	hppDout (info, "dir: " << dir);
+
+	const Double dir_norm = sqrt (dir [0]*dir [0] + dir [1]*dir [1]
+					  + dir [2]*dir [2]);
+
+	if (workspaceDim == 2) { /* 2D gamma and projection*/
+	  const size_type index = robot->configSize() - 2; // dir index
+	  q (0) -= dir [0]; // x part
+	  q (1) -= dir [1]; // y part
+	  q (index) = dir [0]/dir_norm;
+	  q (index+1) = dir [1]/dir_norm;
+	}
+	else { /* 3D gamma and projection*/
+	  const size_type index = robot->configSize() - 4; // dir index
+	  q (0) -= dir [0]; // x part
+	  q (1) -= dir [1]; // y part
+	  q (2) -= dir [2]; // z part
+	  q (index) = dir [0]/dir_norm;
+	  q (index+1) = dir [1]/dir_norm;
+	  q (index+2) = dir [2]/dir_norm;
+	}
+	// now q_proj is "at the contact", next part is about to shift it
+
+	if (workspaceDim == 2) { /* 2D */
+	  const size_type index = robot->configSize() - workspaceDim;
+	  const Double gamma = atan2(q (index+1), q (index)) - M_PI/2;
+	  q (0) -= dist*sin(gamma); // x part
+	  q (1) += dist*cos(gamma); // y part
+	}
+	else { /* 3D */
+	  const size_type index = robot->configSize() - workspaceDim;
+	  q (0) += dist * q (index); // x part
+	  q (1) += dist * q (index + 1); // y part
+	  q (2) += dist * q (index + 2); // z part
+	}
+	hppDout (info, "q: " << displayConfig (q));
+
+	/* Try to rotate the robot manually according to surface normal info */
+	const JointPtr_t jointSO3 = robot->getJointVector () [1];
+	const size_type indexSO3 = jointSO3->rankInConfiguration ();
+	const size_type index = robot->configSize ()
+	  - robot->extraConfigSpace ().dimension ();
+
+	const Double nx = q [index];
+	const Double ny = q [index + 1];
+	const Double nz = q [index + 2];
+	const Double theta = q [index + 3];
+	hppDout (info, "theta: " << theta);
+	// most general case (see Matlab script)
+	const Double x12= nz/sqrt((1+tan(theta)*tan(theta))
+				  *nz*nz+(nx+ny*tan(theta))*(nx+ny*tan(theta)));
+	const Double y12 = x12*tan(theta);
+	const Double z12 = -x12*(nx+ny*tan(theta))/nz;
+	const Double zx = nz*x12-nx*z12; // simple cross product
+	const Double yz = ny*z12-nz*y12;
+	const Double xy = nx*y12-ny*x12;
+	fcl::Matrix3f A; // A: rotation matrix expressing R1 in R0
+	A (0,0) = x12; A (0,1) = yz; A (0,2) = nx;
+	A (1,0) = y12; A (1,1) = zx; A (1,2) = ny;
+	A (2,0) = z12; A (2,1) = xy; A (2,2) = nz;
+	hppDout (info, "A.determinant (): " << A.determinant ());
+	
+	fcl::Quaternion3f quat (1,0,0,0);
+	quat.fromRotation (A);
+	hppDout (info, "quat: " << quat);
+	
+	q [indexSO3] = quat [0];
+	q [indexSO3 + 1] = quat [1];
+	q [indexSO3 + 2] = quat [2];
+	q [indexSO3 + 3] = quat [3];
+	hppDout (info, "q: " << displayConfig (q));
+	/**/
+
+	hpp::floatSeq *dofArray_out = 0x0;
+	dofArray_out = new hpp::floatSeq();
+	dofArray_out->length (robot->configSize ());
+	for(std::size_t i=0; i<robot->configSize (); i++)
+	  (*dofArray_out)[i] = q (i);
+	return dofArray_out;
       }
 
     } // end of namespace impl.

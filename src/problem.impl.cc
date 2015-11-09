@@ -23,6 +23,7 @@
 #include <hpp/model/configuration.hh>
 #include <hpp/core/config-projector.hh>
 #include <hpp/core/basic-configuration-shooter.hh>
+#include <hpp/core/contact-configuration-shooter.hh>
 #include <hpp/core/connected-component.hh>
 #include <hpp/core/edge.hh>
 #include <hpp/core/locked-joint.hh>
@@ -94,6 +95,7 @@ namespace hpp
   {
     namespace impl
     {
+      using model::displayConfig;
       static ConfigurationPtr_t floatSeqToConfig
       (hpp::core::ProblemSolverPtr_t problemSolver,
        const hpp::floatSeq& dofArray)
@@ -810,8 +812,8 @@ namespace hpp
       {
         DevicePtr_t robot = problemSolver_->robot ();
 	if (!robot) throw hpp::Error ("No robot loaded");
-        core::BasicConfigurationShooterPtr_t shooter
-          = core::BasicConfigurationShooter::create (robot);
+        //core::BasicConfigurationShooterPtr_t shooter = core::BasicConfigurationShooter::create (robot);
+          core::ContactConfigurationShooterPtr_t shooter  = core::ContactConfigurationShooter::create (robot, *(problemSolver_->problem ()));
 	bool success = false, configIsValid = false;
         ConfigurationPtr_t config;
         while (!configIsValid && maxIter > 0)
@@ -832,6 +834,7 @@ namespace hpp
           }
           maxIter--;
         }
+    hppDout (info, "config: " << displayConfig (*config));
 	ULong size = (ULong) config->size ();
 	hpp::floatSeq* q_ptr = new hpp::floatSeq ();
 	q_ptr->length (size);

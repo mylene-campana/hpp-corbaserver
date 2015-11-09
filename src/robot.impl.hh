@@ -213,6 +213,8 @@ namespace hpp
 			       const hpp::floatSeq& positionInJoint)
           throw (hpp::Error);
 
+	virtual hpp::floatSeq* getRobotRadiuses () throw (hpp::Error);
+
       private:
 	CollisionObjectPtr_t getObjectByName (const char* name);
 	typedef std::map <std::string, JointPtr_t> JointMap_t;

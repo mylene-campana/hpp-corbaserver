@@ -383,6 +383,9 @@ module hpp
 				    in floatSeq positionInJoint)
       raises (Error);
 
+    /// Get all bodies radiuses
+    floatSeq getRobotRadiuses () raises (Error);
+
     /// Get the name of the current robot.
     string getRobotName () raises (Error);
     /// \}

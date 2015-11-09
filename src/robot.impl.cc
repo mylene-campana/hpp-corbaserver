@@ -1424,6 +1424,34 @@ namespace hpp
 	}
       }
 
+// --------------------------------------------------------------------
+
+      hpp::floatSeq* Robot::getRobotRadiuses () throw (hpp::Error)
+      {
+	try {
+	  DevicePtr_t robot = problemSolver_->robot ();
+	  // Compute number of real urdf joints
+	  JointVector_t jointVector = robot->getJointVector ();
+	  hpp::floatSeq* radiuses_ptr = new hpp::floatSeq ();
+	  std::size_t nbRadiuses = jointVector.size (); // at least...
+	  radiuses_ptr->length ((CORBA::ULong) nbRadiuses);
+	  std::size_t index = 0;
+	  for (JointVector_t::const_iterator it = jointVector.begin ();
+	       it != jointVector.end (); it++) {
+	    BodyPtr_t body = (*it)->linkedBody ();
+	    if (body) {
+	      (*radiuses_ptr) [(CORBA::ULong) index] = body->radius ();
+	      hppDout (info, "body: " << body->name ()
+		       << ", radius: " << body->radius ());
+	      index++;
+	    }
+	  }
+	  return radiuses_ptr;
+	} catch (const std::exception& exc) {
+	  throw hpp::Error (exc.what ());
+	}
+      }
+
     } // end of namespace impl.
   } // end of namespace corbaServer.
 } // end of namespace hpp.

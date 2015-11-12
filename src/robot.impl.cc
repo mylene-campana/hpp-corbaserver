@@ -29,6 +29,7 @@
 #include <hpp/corbaserver/server.hh>
 #include "robot.impl.hh"
 #include "tools.hh"
+#include <hpp/core/parabola/parabola-library.hh>
 
 namespace hpp
 {
@@ -1522,39 +1523,8 @@ namespace hpp
 	}
 	hppDout (info, "q: " << displayConfig (q));
 
-	/* Try to rotate the robot manually according to surface normal info */
-	const JointPtr_t jointSO3 = robot->getJointVector () [1];
-	const size_type indexSO3 = jointSO3->rankInConfiguration ();
-
-	const Double nx = q [index];
-	const Double ny = q [index + 1];
-	const Double nz = q [index + 2];
-	const Double theta = q [index + 3];
-	hppDout (info, "theta: " << theta);
-	// most general case (see Matlab script)
-	const Double x12= nz/sqrt((1+tan(theta)*tan(theta))
-				  *nz*nz+(nx+ny*tan(theta))*(nx+ny*tan(theta)));
-	const Double y12 = x12*tan(theta);
-	const Double z12 = -x12*(nx+ny*tan(theta))/nz;
-	const Double zx = nz*x12-nx*z12; // simple cross product
-	const Double yz = ny*z12-nz*y12;
-	const Double xy = nx*y12-ny*x12;
-	fcl::Matrix3f A; // A: rotation matrix expressing R1 in R0
-	A (0,0) = x12; A (0,1) = yz; A (0,2) = nx;
-	A (1,0) = y12; A (1,1) = zx; A (1,2) = ny;
-	A (2,0) = z12; A (2,1) = xy; A (2,2) = nz;
-	hppDout (info, "A.determinant (): " << A.determinant ());
-	
-	fcl::Quaternion3f quat (1,0,0,0);
-	quat.fromRotation (A);
-	hppDout (info, "quat: " << quat);
-	
-	q [indexSO3] = quat [0];
-	q [indexSO3 + 1] = quat [1];
-	q [indexSO3 + 2] = quat [2];
-	q [indexSO3 + 3] = quat [3];
-	hppDout (info, "q: " << displayConfig (q));
-	/**/
+	// Try to rotate the robot manually according to surface normal info
+	q = hpp::core::setOrientation (robot, q);
 
 	hpp::floatSeq *dofArray_out = 0x0;
 	dofArray_out = new hpp::floatSeq();

@@ -1457,7 +1457,6 @@ namespace hpp
 // --------------------------------------------------------------------
       
       hpp::floatSeq* Robot::projectOnObstacle (const hpp::floatSeq& dofArray,
-					       const Short workspaceDim,
 					       const Double dist)
         throw (hpp::Error)
       {
@@ -1466,6 +1465,8 @@ namespace hpp
 	Double minDistance = std::numeric_limits <Double>::infinity();
 	Double distance = minDistance;
 	DevicePtr_t robot = problemSolver_->robot ();
+	const size_type ecsDim = robot->extraConfigSpace ().dimension ();
+	const size_type index = robot->configSize() - ecsDim; // dir index
 
 	robot->currentConfiguration (q);
 	robot->computeForwardKinematics ();
@@ -1486,22 +1487,19 @@ namespace hpp
 	  }
 	}
 	hppDout (info, "minDistance: " << minDistance);
-	hppDout (info, "pi: " << pi);
-	hppDout (info, "pj: " << pj);
+	hppDout (info, "pi: " << pi);	hppDout (info, "pj: " << pj);
 	hppDout (info, "dir: " << dir);
 
 	const Double dir_norm = sqrt (dir [0]*dir [0] + dir [1]*dir [1]
 					  + dir [2]*dir [2]);
 
-	if (workspaceDim == 2) { /* 2D gamma and projection*/
-	  const size_type index = robot->configSize() - 2; // dir index
+	if (ecsDim == 2) { /* 2D gamma and projection*/
 	  q (0) -= dir [0]; // x part
 	  q (1) -= dir [1]; // y part
 	  q (index) = dir [0]/dir_norm;
 	  q (index+1) = dir [1]/dir_norm;
 	}
 	else { /* 3D gamma and projection*/
-	  const size_type index = robot->configSize() - 4; // dir index
 	  q (0) -= dir [0]; // x part
 	  q (1) -= dir [1]; // y part
 	  q (2) -= dir [2]; // z part
@@ -1511,14 +1509,13 @@ namespace hpp
 	}
 	// now q_proj is "at the contact", next part is about to shift it
 
-	if (workspaceDim == 2) { /* 2D */
-	  const size_type index = robot->configSize() - workspaceDim;
+	if (ecsDim == 2) { /* 2D */
 	  const Double gamma = atan2(q (index+1), q (index)) - M_PI/2;
 	  q (0) -= dist*sin(gamma); // x part
 	  q (1) += dist*cos(gamma); // y part
 	}
 	else { /* 3D */
-	  const size_type index = robot->configSize() - workspaceDim;
+	  hppDout (info, "index ecs: " << index);
 	  q (0) += dist * q (index); // x part
 	  q (1) += dist * q (index + 1); // y part
 	  q (2) += dist * q (index + 2); // z part
@@ -1528,8 +1525,6 @@ namespace hpp
 	/* Try to rotate the robot manually according to surface normal info */
 	const JointPtr_t jointSO3 = robot->getJointVector () [1];
 	const size_type indexSO3 = jointSO3->rankInConfiguration ();
-	const size_type index = robot->configSize ()
-	  - robot->extraConfigSpace ().dimension ();
 
 	const Double nx = q [index];
 	const Double ny = q [index + 1];

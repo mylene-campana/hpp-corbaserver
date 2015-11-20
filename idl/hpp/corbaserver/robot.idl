@@ -385,6 +385,10 @@ module hpp
     string getRobotName () raises (Error);
     /// \}
     
+    /// Get size of the extra-configuration-space of the robot
+    /// \return size of extra-configuration-space
+    short getExtraConfigSize () raises (Error);
+
     /// Project given configuration on the nearest obstacle, completing
     /// the 'direction' data of the configuration with the plane normal
     /// \param dist is the shift distance to move the robot away from the

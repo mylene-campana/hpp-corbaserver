@@ -20,6 +20,7 @@
 #include <hpp/core/config-projector.hh>
 #include <hpp/core/basic-configuration-shooter.hh>
 #include <hpp/core/contact-configuration-shooter.hh>
+#include <hpp/core/configuration-projection-shooter.hh>
 #include <hpp/core/connected-component.hh>
 #include <hpp/core/edge.hh>
 #include <hpp/core/locked-joint.hh>
@@ -569,35 +570,36 @@ namespace hpp
       // ---------------------------------------------------------------
 
       bool Problem::generateValidConfig (UShort maxIter,
-				      hpp::floatSeq_out output,
-				      double& residualError)
+					 hpp::floatSeq_out output,
+					 double& residualError)
 	throw (hpp::Error)
       {
         DevicePtr_t robot = problemSolver_->robot ();
 	if (!robot) throw hpp::Error ("No robot loaded");
         //core::BasicConfigurationShooterPtr_t shooter = core::BasicConfigurationShooter::create (robot);
-          core::ContactConfigurationShooterPtr_t shooter  = core::ContactConfigurationShooter::create (robot, *(problemSolver_->problem ()));
+        core::ContactConfigurationShooterPtr_t shooter  = core::ContactConfigurationShooter::create (robot, *(problemSolver_->problem ()));
+	//core::ConfigurationProjectionShooterPtr_t shooter  = core::ConfigurationProjectionShooter::create (robot, *(problemSolver_->problem ()), 0.02);
 	bool success = false, configIsValid = false;
         ConfigurationPtr_t config;
         while (!configIsValid && maxIter > 0)
-        {
-          try {
-            config = shooter->shoot ();
-            success = problemSolver_->constraints ()->apply (*config);
-            if (hpp::core::ConfigProjectorPtr_t configProjector =
-                problemSolver_->constraints ()->configProjector ()) {
-              residualError = configProjector->residualError ();
-            }
-            if (success) {
-              robot->currentConfiguration (*config);
-              configIsValid = !robot->collisionTest ();
-            }
-          } catch (const std::exception& exc) {
-            throw hpp::Error (exc.what ());
-          }
-          maxIter--;
-        }
-    hppDout (info, "config: " << displayConfig (*config));
+	  {
+	    try {
+	      config = shooter->shoot ();
+	      success = problemSolver_->constraints ()->apply (*config);
+	      if (hpp::core::ConfigProjectorPtr_t configProjector =
+		  problemSolver_->constraints ()->configProjector ()) {
+		residualError = configProjector->residualError ();
+	      }
+	      if (success) {
+		robot->currentConfiguration (*config);
+		configIsValid = !robot->collisionTest ();
+	      }
+	    } catch (const std::exception& exc) {
+	      throw hpp::Error (exc.what ());
+	    }
+	    maxIter--;
+	  }
+	hppDout (info, "config: " << displayConfig (*config));
 	ULong size = (ULong) config->size ();
 	hpp::floatSeq* q_ptr = new hpp::floatSeq ();
 	q_ptr->length (size);

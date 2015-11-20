@@ -214,6 +214,8 @@ namespace hpp
           throw (hpp::Error);
 
 	virtual hpp::floatSeq* getRobotRadiuses () throw (hpp::Error);
+
+	virtual Short getExtraConfigSize () throw (hpp::Error);
 	
 	virtual hpp::floatSeq* projectOnObstacle (const hpp::floatSeq& dofArray,
 						  const Double dist)

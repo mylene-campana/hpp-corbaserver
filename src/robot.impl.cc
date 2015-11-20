@@ -30,6 +30,7 @@
 #include "robot.impl.hh"
 #include "tools.hh"
 #include <hpp/core/parabola/parabola-library.hh>
+#include <hpp/core/configuration-projection-shooter.hh>
 
 namespace hpp
 {
@@ -1455,82 +1456,41 @@ namespace hpp
 	}
       }
 
-// --------------------------------------------------------------------
+      // --------------------------------------------------------------------
+
+      Short Robot::getExtraConfigSize () throw (hpp::Error)
+      {
+	try {
+	  return (Short) problemSolver_->robot ()
+	    ->extraConfigSpace ().dimension ();
+	} catch (const std::exception& exc) {
+	  hppDout (error, exc.what ());
+	  throw hpp::Error (exc.what ());
+	}
+      }
+
+      // --------------------------------------------------------------------
       
       hpp::floatSeq* Robot::projectOnObstacle (const hpp::floatSeq& dofArray,
 					       const Double dist)
         throw (hpp::Error)
       {
-	Configuration_t q = dofArrayToConfig (problemSolver_, dofArray);
-	fcl::Vec3f pi, pj, dir;
-	Double minDistance = std::numeric_limits <Double>::infinity();
-	Double distance = minDistance;
+	Configuration_t q = dofArrayToConfig (problemSolver_, dofArray), q_proj;
 	DevicePtr_t robot = problemSolver_->robot ();
-	const size_type ecsDim = robot->extraConfigSpace ().dimension ();
-	const size_type index = robot->configSize() - ecsDim; // dir index
-
-	robot->currentConfiguration (q);
-	robot->computeForwardKinematics ();
-	const DistanceBetweenObjectsPtr_t& distanceBetweenObjects =
-	  problemSolver_->distanceBetweenObjects ();
-	distanceBetweenObjects->computeDistances ();
-	const DistanceResults_t& dr =
-	  distanceBetweenObjects->distanceResults ();
-
-	for (model::DistanceResults_t::const_iterator itDistance = 
-	       dr.begin (); itDistance != dr.end (); itDistance++) {
-	  distance = itDistance->distance ();
-	  if (distance < minDistance){
-	    minDistance = distance;
-	    pi = itDistance->closestPointInner (); // point Body
-	    pj = itDistance->closestPointOuter (); // point Obst
-	    dir = pi - pj; // obstacle normale direction
-	  }
-	}
-	hppDout (info, "minDistance: " << minDistance);
-	hppDout (info, "pi: " << pi);	hppDout (info, "pj: " << pj);
-	hppDout (info, "dir: " << dir);
-
-	const Double dir_norm = sqrt (dir [0]*dir [0] + dir [1]*dir [1]
-					  + dir [2]*dir [2]);
-
-	if (ecsDim == 2) { /* 2D gamma and projection*/
-	  q (0) -= dir [0]; // x part
-	  q (1) -= dir [1]; // y part
-	  q (index) = dir [0]/dir_norm;
-	  q (index+1) = dir [1]/dir_norm;
-	}
-	else { /* 3D gamma and projection*/
-	  q (0) -= dir [0]; // x part
-	  q (1) -= dir [1]; // y part
-	  q (2) -= dir [2]; // z part
-	  q (index) = dir [0]/dir_norm;
-	  q (index+1) = dir [1]/dir_norm;
-	  q (index+2) = dir [2]/dir_norm;
-	}
-	// now q_proj is "at the contact", next part is about to shift it
-
-	if (ecsDim == 2) { /* 2D */
-	  const Double gamma = atan2(q (index+1), q (index)) - M_PI/2;
-	  q (0) -= dist*sin(gamma); // x part
-	  q (1) += dist*cos(gamma); // y part
-	}
-	else { /* 3D */
-	  hppDout (info, "index ecs: " << index);
-	  q (0) += dist * q (index); // x part
-	  q (1) += dist * q (index + 1); // y part
-	  q (2) += dist * q (index + 2); // z part
-	}
-	hppDout (info, "q: " << displayConfig (q));
+	core::ConfigurationProjectionShooterPtr_t shooter  = 
+	  core::ConfigurationProjectionShooter::create
+	  (robot, *(problemSolver_->problem ()), dist);
+	q_proj = shooter->project (q);
+	hppDout (info, "q_proj: " << displayConfig (q_proj));
 
 	// Try to rotate the robot manually according to surface normal info
-	q = hpp::core::setOrientation (robot, q);
+	q_proj = hpp::core::setOrientation (robot, q_proj);
 
 	hpp::floatSeq *dofArray_out = 0x0;
 	dofArray_out = new hpp::floatSeq();
 	dofArray_out->length (robot->configSize ());
 	for(std::size_t i=0; i<robot->configSize (); i++)
-	  (*dofArray_out)[i] = q (i);
+	  (*dofArray_out)[i] = q_proj (i);
 	return dofArray_out;
       }
 

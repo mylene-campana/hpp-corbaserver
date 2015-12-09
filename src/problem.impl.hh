@@ -226,6 +226,9 @@ namespace hpp
 	virtual void resetRoadmap ();
         virtual void saveRoadmap (const char* filename) throw (hpp::Error);
         virtual void readRoadmap (const char* filename) throw (hpp::Error);
+	virtual hpp::floatSeqSeq* sampleSubPath (UShort inPathId,
+						 UShort NbPointsPerSubPath)
+	  throw (hpp::Error);
 
       private:
 	/// \brief Pointer to the Server owning this object

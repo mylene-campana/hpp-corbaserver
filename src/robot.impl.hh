@@ -221,6 +221,9 @@ namespace hpp
 						  const Double dist)
 	  throw (hpp::Error);
 
+	virtual hpp::floatSeq* setOrientation (const hpp::floatSeq& dofArray)
+	  throw (hpp::Error);
+
       private:
 	CollisionObjectPtr_t getObjectByName (const char* name);
 	typedef std::map <std::string, JointPtr_t> JointMap_t;

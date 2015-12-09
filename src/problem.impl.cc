@@ -815,7 +815,7 @@ namespace hpp
 	if (!robot) throw hpp::Error ("No robot loaded");
         //core::BasicConfigurationShooterPtr_t shooter = core::BasicConfigurationShooter::create (robot);
         core::ContactConfigurationShooterPtr_t shooter  = core::ContactConfigurationShooter::create (robot, *(problemSolver_->problem ()));
-	//core::ConfigurationProjectionShooterPtr_t shooter  = core::ConfigurationProjectionShooter::create (robot, *(problemSolver_->problem ()), 0.02);
+	//core::ConfigurationProjectionShooterPtr_t shooter  = core::ConfigurationProjectionShooter::create (robot, *(problemSolver_->problem ()), 0.01);
 	bool success = false, configIsValid = false;
         ConfigurationPtr_t config;
         while (!configIsValid && maxIter > 0)
@@ -1730,6 +1730,57 @@ namespace hpp
         } catch (const std::exception& exc) {
           throw hpp::Error (exc.what ());
         }
+      }
+
+      hpp::floatSeqSeq* Problem::sampleSubPath (UShort pathId,
+						UShort NbPointsPerSubPath)
+	throw (hpp::Error)
+      {
+	try {
+	  if (pathId >= problemSolver_->paths ().size ()) {
+	    std::ostringstream oss ("wrong path id: ");
+	    oss << pathId << ", number path: "
+		<< problemSolver_->paths ().size () << ".";
+	    throw std::runtime_error (oss.str ().c_str ());
+	  }
+	  DevicePtr_t robot = problemSolver_->robot ();
+	  const CORBA::ULong configSize = robot->configSize();
+	  PathVectorPtr_t path = problemSolver_->paths () [pathId];
+	  std::size_t num_subpaths  = (*path).numberPaths ();
+	  std::vector<Configuration_t> configs;
+
+	  for (std::size_t i = 0; i < num_subpaths; ++i) {
+	    PathPtr_t subpath = (*path).pathAtRank(i);
+	    Double subLength = subpath->length (); // for t instead of x
+	    //Double subLength = subpath->end ()[0] - subpath->initial ()[0];
+	    Double stepSize = subLength / NbPointsPerSubPath;
+	    //hppDout (info, "stepSize: " << stepSize);
+	    Double t = 0;
+	    for (std::size_t j = 0; j< NbPointsPerSubPath; j++) {
+	      t = j * stepSize;
+	      Configuration_t q = (*subpath) (t);
+	      configs.push_back (q);
+	    }
+	  }
+	  configs.push_back ((*path) (path->length())); // last config
+	  // modify configsequence
+	  hpp::floatSeqSeq *configSequence;
+	  configSequence = new hpp::floatSeqSeq ();
+	  configSequence->length ((CORBA::ULong) configs.size ());
+	  hpp::floatSeq* dofArray;
+	  dofArray = new hpp::floatSeq ();
+	  dofArray->length (configSize);
+	  for (std::size_t i = 0; i < configs.size (); i++) {
+	    dofArray = vectorToFloatseq (configs [i]);
+	    //hppDout (info, "configs [i]: " << displayConfig (configs [i]));
+	    (*configSequence) [(CORBA::ULong)i] = *dofArray;
+	  }
+	  
+	  return configSequence;
+	}
+	catch (const std::exception& exc) {
+	  throw hpp::Error (exc.what ());
+	}
       }
     } // namespace impl
   } // namespace corbaServer

@@ -395,6 +395,10 @@ module hpp
     /// obstacle.
     floatSeq projectOnObstacle (in floatSeq dofArray,
 				in double dist) raises (Error);
+
+    /// Return a configuration whose orientation part respect the
+    /// given normale and theta (see hpp::core::setOrientation)
+    floatSeq setOrientation (in floatSeq dofArray) raises (Error);
   };
   };
 };

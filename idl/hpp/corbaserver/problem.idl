@@ -380,6 +380,12 @@ module hpp
     /// \param filename name of the file from which the roadmap is read.
     void readRoadmap (in string filename) raises (Error);
     /// \}
+    /// Get way points of a path
+    /// \param pathId rank of the path in the problem
+    floatSeqSeq sampleSubPath (in unsigned short pathId,
+			       in unsigned short NbPointsPerSubPath)
+      raises (Error);
+
   };
   }; // interface Problem
 }; // module hpp

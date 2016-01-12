@@ -174,6 +174,10 @@ namespace hpp
 	virtual void resetRoadmap ();
         virtual void saveRoadmap (const char* filename) throw (hpp::Error);
         virtual void readRoadmap (const char* filename) throw (hpp::Error);
+	virtual Double getTimeGB () throw (hpp::Error);
+	virtual hpp::floatSeq* getTimeValues () throw (hpp::Error);
+	virtual hpp::floatSeq* getGainValues () throw (hpp::Error);
+	virtual void setAlphaInit (const Double val) throw (hpp::Error);
 
       private:
 	/// \brief Pointer to the Server owning this object
@@ -181,6 +185,13 @@ namespace hpp
 	/// \brief Pointer to hppPlanner object of hpp::corbaServer::Server.
 	/// Instantiated at construction.
 	core::ProblemSolverPtr_t problemSolver_;
+	/// Computation time of Gradient-Based Optimization
+	/// from ProblemSolver's Problem
+	Double tGB_;
+	/// Vector of time values from optimization method
+	hpp::floatSeq* timeValues_;
+	/// Vector of length-gain values from optimization method
+	hpp::floatSeq* gainValues_;
       };
     } // end of namespace impl.
   } // end of namespace corbaServer.

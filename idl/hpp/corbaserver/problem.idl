@@ -581,6 +581,22 @@ module hpp
 
     /// Get the mean computation time of distances for N random configs
     double getMeanDistanceTimes (in unsigned long N);
+
+    /// Get Gradient-based computation time (tGB_) from ProblemSolver's Problem
+    double getTimeGB () raises (Error);
+    /// \}
+
+    /// Get optimized time-values from ProblemSolver's Problem
+    floatSeq getTimeValues () raises (Error);
+    /// \}
+
+    /// Get optimizer length-gain values from ProblemSolver's Problem
+    floatSeq getGainValues () raises (Error);
+    /// \}
+
+    /// Set alphaInit_ parameter of Gradient-Based optimizer
+    void setAlphaInit (in double val) raises (Error);
+    /// \}
   };
   }; // interface Problem
 }; // module hpp

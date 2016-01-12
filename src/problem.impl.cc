@@ -1654,6 +1654,8 @@ namespace hpp
 
       hpp::intSeq* Problem::optimizePath(UShort pathId) throw (hpp::Error)
       {
+	timeValues_ = new hpp::floatSeq();
+	gainValues_ = new hpp::floatSeq();
 	try {
 	  if (pathId >= problemSolver()->paths ().size ()) {
 	    std::ostringstream oss ("wrong path id: ");
@@ -1667,6 +1669,17 @@ namespace hpp
 
 	  PathVectorPtr_t initial = problemSolver()->paths () [pathId];
 	  problemSolver()->optimizePath (initial);
+
+	  // Fill plot values
+	  tGB_ = problemSolver ()->problem ()->tGB_;
+	  hppDout (info, "tGB_= " << tGB_);
+	  Long vectorLength = problemSolver ()->problem ()->timeValues_.size ();
+	  timeValues_->length((CORBA::ULong) vectorLength);
+	  gainValues_->length((CORBA::ULong) vectorLength);
+	  for (unsigned int i=0; i<vectorLength; i++){
+	    (*timeValues_) [i] = problemSolver ()->problem ()->timeValues_ [i];
+	    (*gainValues_) [i] = problemSolver ()->problem ()->gainValues_ [i];
+	  }
 
           // Stop timer
           boost::posix_time::time_duration time =
@@ -2175,6 +2188,13 @@ namespace hpp
 
       // ---------------------------------------------------------------
 
+      Double Problem::getTimeGB () throw (hpp::Error)
+      {
+	return tGB_;
+      }
+
+      // ---------------------------------------------------------------
+
       hpp::intSeq* Problem::getEdgeIndexVector () throw (hpp::Error)
       {
 	std::vector<long> vector = problemSolver ()->roadmap ()->edgeIndexVector_;
@@ -2185,6 +2205,13 @@ namespace hpp
 	  (*result) [i] = vector [i];
 	}
 	return result;
+      }
+
+      // ---------------------------------------------------------------
+
+      hpp::floatSeq* Problem::getTimeValues () throw (hpp::Error)
+      {
+	return timeValues_;
       }
 
       // ---------------------------------------------------------------
@@ -2308,6 +2335,19 @@ namespace hpp
 	return result/N;
       }
 
+      // ---------------------------------------------------------------
+
+      hpp::floatSeq* Problem::getGainValues () throw (hpp::Error)
+      {
+	return gainValues_;
+      }
+
+      // ---------------------------------------------------------------
+
+      void Problem::setAlphaInit (const Double val) throw (hpp::Error)
+      {
+	problemSolver ()->problem ()->alphaInit_ = val;
+      }
     } // namespace impl
   } // namespace corbaServer
 } // namespace hpp

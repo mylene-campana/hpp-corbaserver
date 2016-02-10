@@ -230,6 +230,9 @@ namespace hpp
 						 UShort NbPointsPerSubPath)
 	  throw (hpp::Error);
 
+	virtual void setMaxVelocityLim (const Double vmax) throw (hpp::Error);
+	virtual void setFrictionCoef (const Double mu) throw (hpp::Error);
+
       private:
 	/// \brief Pointer to the Server owning this object
 	corbaServer::Server* server_;

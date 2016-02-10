@@ -1782,6 +1782,20 @@ namespace hpp
 	  throw hpp::Error (exc.what ());
 	}
       }
+
+      // ---------------------------------------------------------------
+
+      void Problem::setMaxVelocityLim (const Double vmax) throw (hpp::Error)
+      {
+	problemSolver_->problem ()->vmax_ = vmax;
+      }
+
+      // ---------------------------------------------------------------
+
+      void Problem::setFrictionCoef (const Double mu) throw (hpp::Error)
+      {
+	problemSolver_->problem ()->mu_ = mu;
+      }
     } // namespace impl
   } // namespace corbaServer
 } // namespace hpp

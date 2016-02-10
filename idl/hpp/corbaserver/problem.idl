@@ -463,6 +463,12 @@ module hpp
 			       in unsigned short NbPointsPerSubPath)
       raises (Error);
 
+    /// Set alphaInit_ parameter of Gradient-Based optimizer
+    void setMaxVelocityLim (in double vmax) raises (Error);
+
+    /// Set alphaInit_ parameter of Gradient-Based optimizer
+    void setFrictionCoef (in double mu) raises (Error);
+
   };
   }; // interface Problem
 }; // module hpp

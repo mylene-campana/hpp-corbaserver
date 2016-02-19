@@ -469,6 +469,9 @@ module hpp
     /// Set alphaInit_ parameter of Gradient-Based optimizer
     void setFrictionCoef (in double mu) raises (Error);
 
+    /// Get vector of parabola result values from SM parabola
+    intSeq getResultValues () raises (Error);
+
   };
   }; // interface Problem
 }; // module hpp

@@ -1135,7 +1135,18 @@ namespace hpp
           (*ret)[1] = time.minutes ();
           (*ret)[2] = time.seconds ();
           (*ret)[3] = (long) (time.fractional_seconds () / 1000);
-          return ret;
+
+	  resultValues_ = new hpp::intSeq();
+	  // Fill results values from solved problem
+	  unsigned int vectorLength =
+	    problemSolver_->problem ()->parabolaResults_.size ();
+	  resultValues_->length((CORBA::ULong) vectorLength);
+	  long result;
+	  for (unsigned int i=0; i<vectorLength; i++) {
+	    result = problemSolver_->problem ()->parabolaResults_ [i];
+	    (*resultValues_) [i] = result;
+	  }
+	  return ret;
 	} catch (const std::exception& exc) {
 	  throw hpp::Error (exc.what ());
 	}
@@ -1748,6 +1759,7 @@ namespace hpp
 	  PathVectorPtr_t path = problemSolver_->paths () [pathId];
 	  std::size_t num_subpaths  = (*path).numberPaths ();
 	  std::vector<Configuration_t> configs;
+	  bool success;
 
 	  for (std::size_t i = 0; i < num_subpaths; ++i) {
 	    PathPtr_t subpath = (*path).pathAtRank(i);
@@ -1758,11 +1770,11 @@ namespace hpp
 	    Double t = 0;
 	    for (std::size_t j = 0; j< NbPointsPerSubPath; j++) {
 	      t = j * stepSize;
-	      Configuration_t q = (*subpath) (t);
+	      Configuration_t q = (*subpath) (t, success);
 	      configs.push_back (q);
 	    }
 	  }
-	  configs.push_back ((*path) (path->length())); // last config
+	  configs.push_back ((*path) (path->length(), success)); // last config
 	  // modify configsequence
 	  hpp::floatSeqSeq *configSequence;
 	  configSequence = new hpp::floatSeqSeq ();
@@ -1796,6 +1808,14 @@ namespace hpp
       {
 	problemSolver_->problem ()->mu_ = mu;
       }
+
+      // ---------------------------------------------------------------
+
+      hpp::intSeq* Problem::getResultValues () throw (hpp::Error)
+      {
+	return resultValues_;
+      }
+
     } // namespace impl
   } // namespace corbaServer
 } // namespace hpp

@@ -1477,9 +1477,10 @@ namespace hpp
       {
 	Configuration_t q = dofArrayToConfig (problemSolver_, dofArray), q_proj;
 	DevicePtr_t robot = problemSolver_->robot ();
+	problemSolver_->problem ()->shiftDistance_ = dist;
 	core::ConfigurationProjectionShooterPtr_t shooter  = 
 	  core::ConfigurationProjectionShooter::create
-	  (robot, *(problemSolver_->problem ()), dist);
+	  (robot, *(problemSolver_->problem ()));
 	q_proj = shooter->project (q);
 	hppDout (info, "q_proj: " << displayConfig (q_proj));
 

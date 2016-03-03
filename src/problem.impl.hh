@@ -227,12 +227,13 @@ namespace hpp
         virtual void saveRoadmap (const char* filename) throw (hpp::Error);
         virtual void readRoadmap (const char* filename) throw (hpp::Error);
 	virtual hpp::floatSeqSeq* sampleSubPath (UShort inPathId,
-						 UShort NbPointsPerSubPath)
-	  throw (hpp::Error);
+						 UShort NbPointsPerSubPath) throw (hpp::Error);
 
 	virtual void setMaxVelocityLim (const Double vmax) throw (hpp::Error);
 	virtual void setFrictionCoef (const Double mu) throw (hpp::Error);
 	virtual hpp::intSeq* getResultValues () throw (hpp::Error);
+	virtual hpp::floatSeqSeq* edgeToSampledPathVector (Long edgeId, 
+	UShort NbPointsPerSubPath) throw (hpp::Error);
 
       private:
 	/// \brief Pointer to the Server owning this object

@@ -471,6 +471,13 @@ module hpp
 
     /// Get vector of parabola result values from SM parabola
     intSeq getResultValues () raises (Error);
+	
+    /// Get paths from roadmap edges and return sampled configurations on them
+    /// (Because not sure if returning a pathVector is a good idea (never seen it)
+    /// \param NbPointsPerSubPath number of points on each edge-path
+    floatSeqSeq edgeToSampledPathVector (in long edgeId, 
+					 in unsigned short NbPointsPerSubPath)
+      raises (Error);
 
   };
   }; // interface Problem

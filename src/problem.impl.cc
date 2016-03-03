@@ -1816,6 +1816,52 @@ namespace hpp
 	return resultValues_;
       }
 
+      // ---------------------------------------------------------------
+	  
+      hpp::floatSeqSeq* Problem::edgeToSampledPathVector (Long edgeId,
+							  UShort NbPoints) 
+	throw (hpp::Error)
+      {
+	try {
+	  DevicePtr_t robot = problemSolver_->robot ();
+	  const CORBA::ULong configSize = robot->configSize();
+	  std::vector<Configuration_t> configs;
+	  bool success;
+	  const Edges_t & edges (problemSolver_->roadmap ()->edges ());
+	  Edges_t::const_iterator itEdge = edges.begin ();
+	  std::size_t i=0;
+	  while (i < edgeId) {
+	    ++i; itEdge++;
+	  }
+	  PathPtr_t subpath = (*itEdge)->path ();
+	  Double subLength = subpath->length ();
+	  Double stepSize = subLength / NbPoints;
+	  Double t = 0;
+	  for (std::size_t j = 0; j< NbPoints; j++) {
+	    t = j * stepSize;
+	    Configuration_t q = (*subpath) (t, success);
+	    configs.push_back (q);
+	  }
+	  configs.push_back ((*subpath) (subpath->length(), success));
+	  
+	  // modify configsequence
+	  hpp::floatSeqSeq *configSequence;
+	  configSequence = new hpp::floatSeqSeq ();
+	  configSequence->length ((CORBA::ULong) configs.size ());
+	  hpp::floatSeq* dofArray;
+	  dofArray = new hpp::floatSeq ();
+	  dofArray->length (configSize);
+	  for (std::size_t i = 0; i < configs.size (); i++) {
+	    dofArray = vectorToFloatseq (configs [i]);
+	    (*configSequence) [(CORBA::ULong)i] = *dofArray;
+	  }
+	  
+	  return configSequence;
+	} catch (const std::exception& exc) {
+	  throw hpp::Error (exc.what ());
+	}
+      }
+	  
     } // namespace impl
   } // namespace corbaServer
 } // namespace hpp

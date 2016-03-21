@@ -1135,17 +1135,6 @@ namespace hpp
           (*ret)[1] = time.minutes ();
           (*ret)[2] = time.seconds ();
           (*ret)[3] = (long) (time.fractional_seconds () / 1000);
-
-	  resultValues_ = new hpp::intSeq();
-	  // Fill results values from solved problem
-	  unsigned int vectorLength =
-	    problemSolver_->problem ()->parabolaResults_.size ();
-	  resultValues_->length((CORBA::ULong) vectorLength);
-	  long result;
-	  for (unsigned int i=0; i<vectorLength; i++) {
-	    result = problemSolver_->problem ()->parabolaResults_ [i];
-	    (*resultValues_) [i] = result;
-	  }
 	  return ret;
 	} catch (const std::exception& exc) {
 	  throw hpp::Error (exc.what ());
@@ -1813,7 +1802,44 @@ namespace hpp
 
       hpp::intSeq* Problem::getResultValues () throw (hpp::Error)
       {
-	return resultValues_;
+	unsigned int vectorLength =
+	  problemSolver_->problem ()->parabolaResults_.size ();
+	hpp::intSeq* resultValues = new hpp::intSeq();
+	resultValues->length((CORBA::ULong) vectorLength);
+	long result;
+	for (unsigned int i=0; i<vectorLength; i++) {
+	  result = problemSolver_->problem ()->parabolaResults_ [i];
+	  (*resultValues) [i] = result;
+	}
+	return resultValues;
+      }
+
+      // ---------------------------------------------------------------
+
+      hpp::intSeq* Problem::getEdgeIndexVector () throw (hpp::Error)
+      {
+	std::vector<long> vector = problemSolver_->roadmap ()->edgeIndexVector_;
+	unsigned int vectorLength = vector.size ();
+	hpp::intSeq* result = new hpp::intSeq();
+	result->length((CORBA::ULong) vectorLength);
+	for (unsigned int i=0; i<vectorLength; i++) {
+	  (*result) [i] = vector [i];
+	}
+	return result;
+      }
+
+      // ---------------------------------------------------------------
+
+      hpp::intSeq* Problem::getNodeIndexVector () throw (hpp::Error)
+      {
+	std::vector<long> vector = problemSolver_->roadmap ()->nodeIndexVector_;
+	unsigned int vectorLength = vector.size ();
+	hpp::intSeq* result = new hpp::intSeq();
+	result->length((CORBA::ULong) vectorLength);
+	for (unsigned int i=0; i<vectorLength; i++) {
+	  (*result) [i] = vector [i];
+	}
+	return result;
       }
 
       // ---------------------------------------------------------------
@@ -1829,7 +1855,7 @@ namespace hpp
 	  bool success;
 	  const Edges_t & edges (problemSolver_->roadmap ()->edges ());
 	  Edges_t::const_iterator itEdge = edges.begin ();
-	  std::size_t i=0;
+	  Long i=0;
 	  while (i < edgeId) {
 	    ++i; itEdge++;
 	  }

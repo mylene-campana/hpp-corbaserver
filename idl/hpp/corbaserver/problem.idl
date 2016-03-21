@@ -471,6 +471,12 @@ module hpp
 
     /// Get vector of parabola result values from SM parabola
     intSeq getResultValues () raises (Error);
+
+    /// Get vector of edge indexes (in roadmap) from a solved problem
+    intSeq getEdgeIndexVector () raises (Error);
+
+    /// Get vector of node indexes (in roadmap) from a solved problem
+    intSeq getNodeIndexVector () raises (Error);
 	
     /// Get paths from roadmap edges and return sampled configurations on them
     /// (Because not sure if returning a pathVector is a good idea (never seen it)

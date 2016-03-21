@@ -232,6 +232,8 @@ namespace hpp
 	virtual void setMaxVelocityLim (const Double vmax) throw (hpp::Error);
 	virtual void setFrictionCoef (const Double mu) throw (hpp::Error);
 	virtual hpp::intSeq* getResultValues () throw (hpp::Error);
+	virtual hpp::intSeq* getEdgeIndexVector () throw (hpp::Error);
+	virtual hpp::intSeq* getNodeIndexVector () throw (hpp::Error);
 	virtual hpp::floatSeqSeq* edgeToSampledPathVector (Long edgeId, 
 	UShort NbPointsPerSubPath) throw (hpp::Error);
 
@@ -241,9 +243,6 @@ namespace hpp
 	/// \brief Pointer to hppPlanner object of hpp::corbaServer::Server.
 	/// Instantiated at construction.
 	core::ProblemSolverPtr_t problemSolver_;
-
-	/// Vector of parabola result values from SM parabola
-	hpp::intSeq* resultValues_;
       };
     } // end of namespace impl.
   } // end of namespace corbaServer.

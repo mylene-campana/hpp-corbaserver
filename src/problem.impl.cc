@@ -23,8 +23,6 @@
 #include <hpp/model/configuration.hh>
 #include <hpp/core/config-projector.hh>
 #include <hpp/core/basic-configuration-shooter.hh>
-#include <hpp/core/contact-configuration-shooter.hh>
-#include <hpp/core/configuration-projection-shooter.hh>
 #include <hpp/core/connected-component.hh>
 #include <hpp/core/edge.hh>
 #include <hpp/core/locked-joint.hh>
@@ -813,9 +811,7 @@ namespace hpp
       {
         DevicePtr_t robot = problemSolver_->robot ();
 	if (!robot) throw hpp::Error ("No robot loaded");
-        //core::BasicConfigurationShooterPtr_t shooter = core::BasicConfigurationShooter::create (robot);
-        core::ContactConfigurationShooterPtr_t shooter  = core::ContactConfigurationShooter::create (robot, *(problemSolver_->problem ()));
-	//core::ConfigurationProjectionShooterPtr_t shooter  = core::ConfigurationProjectionShooter::create (robot, *(problemSolver_->problem ()), 0.01);
+        core::BasicConfigurationShooterPtr_t shooter = core::BasicConfigurationShooter::create (robot);
 	bool success = false, configIsValid = false;
         ConfigurationPtr_t config;
         while (!configIsValid && maxIter > 0)

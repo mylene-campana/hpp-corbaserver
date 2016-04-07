@@ -216,13 +216,6 @@ namespace hpp
 	virtual hpp::floatSeq* getRobotRadiuses () throw (hpp::Error);
 
 	virtual Short getExtraConfigSize () throw (hpp::Error);
-	
-	virtual hpp::floatSeq* projectOnObstacle (const hpp::floatSeq& dofArray,
-						  const Double dist)
-	  throw (hpp::Error);
-
-	virtual hpp::floatSeq* setOrientation (const hpp::floatSeq& dofArray)
-	  throw (hpp::Error);
 
       private:
 	CollisionObjectPtr_t getObjectByName (const char* name);

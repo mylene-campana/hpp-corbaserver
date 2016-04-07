@@ -29,8 +29,6 @@
 #include <hpp/corbaserver/server.hh>
 #include "robot.impl.hh"
 #include "tools.hh"
-#include <hpp/core/parabola/parabola-library.hh>
-#include <hpp/core/configuration-projection-shooter.hh>
 
 namespace hpp
 {
@@ -1467,50 +1465,6 @@ namespace hpp
 	  hppDout (error, exc.what ());
 	  throw hpp::Error (exc.what ());
 	}
-      }
-
-      // --------------------------------------------------------------------
-      
-      hpp::floatSeq* Robot::projectOnObstacle (const hpp::floatSeq& dofArray,
-					       const Double dist)
-        throw (hpp::Error)
-      {
-	Configuration_t q = dofArrayToConfig (problemSolver_, dofArray), q_proj;
-	DevicePtr_t robot = problemSolver_->robot ();
-	problemSolver_->problem ()->shiftDistance_ = dist;
-	core::ConfigurationProjectionShooterPtr_t shooter  = 
-	  core::ConfigurationProjectionShooter::create
-	  (robot, *(problemSolver_->problem ()));
-	q_proj = shooter->project (q);
-	hppDout (info, "q_proj: " << displayConfig (q_proj));
-
-	// Try to rotate the robot manually according to surface normal info
-	// a priori non-needed if orientation in projection-shooter
-	// orientation done before proj to correct the distance
-	//q_proj = hpp::core::setOrientation (robot, q_proj);
-
-	hpp::floatSeq *dofArray_out = 0x0;
-	dofArray_out = new hpp::floatSeq();
-	dofArray_out->length (robot->configSize ());
-	for(std::size_t i=0; i<robot->configSize (); i++)
-	  (*dofArray_out)[i] = q_proj (i);
-	return dofArray_out;
-      }
-
-      // --------------------------------------------------------------------
-      
-      hpp::floatSeq* Robot::setOrientation (const hpp::floatSeq& dofArray)
-        throw (hpp::Error)
-      {
-	DevicePtr_t robot = problemSolver_->robot ();
-	Configuration_t q = dofArrayToConfig (problemSolver_, dofArray);
-	q = hpp::core::setOrientation (robot, q);
-	hpp::floatSeq *dofArray_out = 0x0;
-	dofArray_out = new hpp::floatSeq();
-	dofArray_out->length (robot->configSize ());
-	for(std::size_t i=0; i<robot->configSize (); i++)
-	  (*dofArray_out)[i] = q (i);
-	return dofArray_out;
       }
 
     } // end of namespace impl.

@@ -394,16 +394,6 @@ module hpp
     /// \return size of extra-configuration-space
     short getExtraConfigSize () raises (Error);
 
-    /// Project given configuration on the nearest obstacle, completing
-    /// the 'direction' data of the configuration with the plane normal
-    /// \param dist is the shift distance to move the robot away from the
-    /// obstacle.
-    floatSeq projectOnObstacle (in floatSeq dofArray,
-				in double dist) raises (Error);
-
-    /// Return a configuration whose orientation part respect the
-    /// given normale and theta (see hpp::core::setOrientation)
-    floatSeq setOrientation (in floatSeq dofArray) raises (Error);
   };
   };
 };

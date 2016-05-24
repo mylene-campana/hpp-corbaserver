@@ -1,4 +1,4 @@
-// Copyright (C) 2010 by Thomas Moulard, CNRS.
+// Copyright (C) 2010 by Thomas Moulard and Joseph Mirabel, CNRS.
 //
 // This file is part of the hpp-corbaserver.
 //
@@ -30,6 +30,9 @@ namespace hpp
   {
     class Server;
     class Client;
+    class ProblemSolverMap;
+    typedef boost::shared_ptr <ProblemSolverMap> ProblemSolverMapPtr_t;
+
     typedef model::Body* BodyPtr_t;
     typedef fcl::CollisionGeometry CollisionGeometry_t;
     typedef boost::shared_ptr <CollisionGeometry_t> CollisionGeometryPtr_t;
@@ -55,6 +58,7 @@ namespace hpp
     typedef core::LockedJoint LockedJoint;
     typedef core::LockedJointPtr_t LockedJointPtr_t;
     typedef core::Nodes_t Nodes_t;
+    typedef core::NodeVector_t NodeVector_t;
     typedef model::ObjectVector_t ObjectVector_t;
     typedef model::ObjectIterator ObjectIterator;
     typedef core::PathPtr_t PathPtr_t;

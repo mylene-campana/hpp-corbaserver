@@ -43,14 +43,9 @@
 
 #include <hpp/constraints/differentiable-function.hh>
 #include <hpp/constraints/distance-between-bodies.hh>
-#include <hpp/constraints/position.hh>
-#include <hpp/constraints/orientation.hh>
-#include <hpp/constraints/transformation.hh>
 #include <hpp/constraints/relative-com.hh>
 #include <hpp/constraints/com-between-feet.hh>
-#include <hpp/constraints/relative-orientation.hh>
-#include <hpp/constraints/relative-transformation.hh>
-#include <hpp/constraints/relative-position.hh>
+#include <hpp/constraints/generic-transformation.hh>
 #include <hpp/constraints/convex-shape-contact.hh>
 #include <hpp/constraints/static-stability.hh>
 #include <hpp/constraints/configuration-constraint.hh>
@@ -96,57 +91,135 @@ namespace hpp
     namespace impl
     {
       using model::displayConfig;
-      static ConfigurationPtr_t floatSeqToConfig
-      (hpp::core::ProblemSolverPtr_t problemSolver,
-       const hpp::floatSeq& dofArray)
-      {
-	size_type configDim = (size_type)dofArray.length();
-	ConfigurationPtr_t config (new Configuration_t (configDim));
+      namespace {
+        static ConfigurationPtr_t floatSeqToConfig
+	(hpp::core::ProblemSolverPtr_t problemSolver,
+	 const hpp::floatSeq& dofArray)
+	{
+	  size_type configDim = (size_type)dofArray.length();
+	  ConfigurationPtr_t config (new Configuration_t (configDim));
 
-	// Get robot in hppPlanner object.
-	DevicePtr_t robot = problemSolver->robot ();
+	  // Get robot in hppPlanner object.
+	  DevicePtr_t robot = problemSolver->robot ();
 
-	// Compare size of input array with number of degrees of freedom of
-	// robot.
-	if (configDim != robot->configSize ()) {
-	  hppDout (error, "robot nb dof=" << configDim <<
-		   " is different from config size=" << robot->configSize());
-	  throw std::runtime_error
-	    ("robot nb dof is different from config size");
+	  // Compare size of input array with number of degrees of freedom of
+	  // robot.
+	  if (configDim != robot->configSize ()) {
+	    hppDout (error, "robot nb dof=" << configDim <<
+		     " is different from config size=" << robot->configSize());
+	    throw std::runtime_error
+	      ("robot nb dof is different from config size");
+	  }
+
+	  // Fill dof vector with dof array.
+	  for (size_type iDof=0; iDof < configDim; ++iDof) {
+	    (*config) [iDof] = dofArray [(CORBA::ULong)iDof];
+	  }
+	  return config;
 	}
 
-	// Fill dof vector with dof array.
-	for (size_type iDof=0; iDof < configDim; ++iDof) {
-	  (*config) [iDof] = dofArray [(CORBA::ULong)iDof];
-	}
-	return config;
+        static vector3_t floatSeqToVector3 (const hpp::floatSeq& dofArray)
+        {
+          if (dofArray.length() != 3) {
+            std::ostringstream oss
+              ("Expecting vector of size 3, got vector of size");
+            oss << dofArray.length() << ".";
+            throw hpp::Error (oss.str ().c_str ());
+          }
+          // Fill dof vector with dof array.
+          vector3_t result;
+          for (unsigned int iDof=0; iDof < 3; ++iDof) {
+            result [iDof] = dofArray [iDof];
+          }
+          return result;
+        }
+
+        static vector_t floatSeqToVector (const hpp::floatSeq& dofArray)
+        {
+          // Fill dof vector with dof array.
+          vector_t result (dofArray.length ());
+          for (size_type iDof=0; iDof < result.size (); ++iDof) {
+            result [iDof] = dofArray [(CORBA::ULong)iDof];
+          }
+          return result;
+        }
+
+        struct BoostCorbaAny {
+          private:
+            template <typename first, typename second>
+              static inline second as (first f) { return second (f); }
+
+            struct toBoost {
+              const CORBA::Any& corbaAny;
+              boost::any* boostAny;
+              bool& done;
+              template <typename T> void operator()(T) {
+                if (done) return;
+                typename T::second_type d;
+                if (corbaAny >>= d) {
+                  *boostAny = as<typename T::second_type, typename T::first_type>(d);
+                  done = true;
+                }
+              }
+              toBoost (const CORBA::Any& a, boost::any* b, bool& d) : corbaAny(a), boostAny(b), done(d) {}
+            };
+            struct toCorba {
+              CORBA::Any* corbaAny;
+              const boost::any& boostAny;
+              bool& done;
+              template <typename T> void operator()(T) {
+                if (done) return;
+                // std::cerr << "trying is " << typeid(typename T::first_type).name() << std::endl;
+                try {
+                  typename T::first_type val = boost::any_cast<typename T::first_type>(boostAny);
+                  *corbaAny <<= as <typename T::first_type, typename T::second_type>(val);
+                  done = true;
+                } catch (const boost::bad_any_cast & e) {
+                  // std::cout << e.what() << std::endl;
+                }
+              }
+              toCorba (const boost::any& a, CORBA::Any* b, bool& d) : corbaAny(b), boostAny(a), done(d) {}
+            };
+            /// TODO: This list of CORBA types is not complete.
+            typedef boost::mpl::vector<
+              // There is no operator<<= (CORBA::Any, CORBA::Boolean)
+              // std::pair<bool                , CORBA::Boolean>,
+              std::pair<int                 , CORBA::Short>,
+              std::pair<unsigned int        , CORBA::UShort>,
+              std::pair<long                , CORBA::Long>,
+              std::pair<unsigned long       , CORBA::ULong>,
+              std::pair<double              , CORBA::Double>,
+              std::pair<float               , CORBA::Float>,
+              std::pair<std::string         , const char*>
+                > BoostCorbaPairs_t;
+
+          public:
+            static boost::any boostize (const CORBA::Any& an) {
+              boost::any out;
+              bool done = false;
+              toBoost ret(an, &out, done);
+              boost::mpl::for_each<BoostCorbaPairs_t> (ret);
+              if (!done) throw hpp::Error ("Could not convert to boost::any");
+              return out;
+            }
+            static CORBA::Any corbaize (const boost::any& an) {
+              CORBA::Any out;
+              bool done = false;
+              toCorba ret(an, &out, done);
+              boost::mpl::for_each<BoostCorbaPairs_t> (ret);
+              if (!done) {
+                throw hpp::Error ("Could not convert to CORBA::Any");
+              }
+              return out;
+            }
+        };
+
+        template <> inline
+          const char* BoostCorbaAny::as<std::string, const char*> (std::string f)
+          { return f.c_str(); }
       }
 
-      static vector3_t floatSeqToVector3 (const hpp::floatSeq& dofArray)
-      {
-	if (dofArray.length() != 3) {
-	  std::ostringstream oss
-	    ("Expecting vector of size 3, got vector of size");
-	  oss << dofArray.length() << ".";
-	  throw hpp::Error (oss.str ().c_str ());
-	}
-	// Fill dof vector with dof array.
-	vector3_t result;
-	for (unsigned int iDof=0; iDof < 3; ++iDof) {
-	  result [iDof] = dofArray [iDof];
-	}
-	return result;
-      }
-
-      static vector_t floatSeqToVector (const hpp::floatSeq& dofArray)
-      {
-	// Fill dof vector with dof array.
-	vector_t result (dofArray.length ());
-	for (size_type iDof=0; iDof < result.size (); ++iDof) {
-	  result [iDof] = dofArray [(CORBA::ULong)iDof];
-	}
-	return result;
-      }
+      // ---------------------------------------------------------------
 
       Problem::Problem (corbaServer::Server* server)
 	: server_ (server)
@@ -184,24 +257,87 @@ namespace hpp
           ret = problemSolver()->getKeys <core::NumericalConstraintPtr_t, Ret_t> ();
         } else if (w == "problem") {
           ret = server_->problemSolverMap()->keys <Ret_t> ();
+        } else if (w == "parameter") {
+          if (problemSolver()->problem() == NULL)
+            throw Error ("No problem in the ProblemSolver");
+          ret = problemSolver()->problem()->getKeys <boost::any, Ret_t> ();
         } else if (w == "type") {
           ret = boost::assign::list_of ("PathOptimizer") ("PathProjector")
             ("PathPlanner") ("ConfigurationShooter") ("SteeringMethod")
-            ("PathValidation") ("NumericalConstraint")("Problem");
+            ("PathValidation") ("NumericalConstraint")("Problem")("Parameter");
         } else {
           throw Error ("Type not understood");
         }
 
-        char** nameList = Names_t::allocbuf(ret.size());
-        Names_t *names = new Names_t (ret.size(), ret.size(), nameList);
-        std::size_t i = 0;
-        for (Ret_t::const_iterator it = ret.begin (); it != ret.end(); ++it) {
-          nameList [i] =
-            (char*) malloc (sizeof(char)*(it->length ()+1));
-            strcpy (nameList [i], it->c_str ());
-            ++i;
+        return toNames_t (ret.begin(), ret.end());
+      }
+
+      // ---------------------------------------------------------------
+
+      Names_t* Problem::getSelected (const char* what) throw (hpp::Error)
+      {
+        std::string w (what);
+        boost::algorithm::to_lower(w);
+        typedef std::list <std::string> Ret_t;
+        Ret_t ret;
+        core::value_type tol;
+
+        if (w == "pathoptimizer") {
+          const core::ProblemSolver::PathOptimizerTypes_t& types =
+            problemSolver()->pathOptimizerTypes();
+          ret = Ret_t (types.begin(), types.end());
+        } else if (w == "pathprojector") {
+          ret.push_back (problemSolver()->pathProjectorType (tol));
+        } else if (w == "pathplanner") {
+          ret.push_back (problemSolver()->pathPlannerType ());
+        } else if (w == "configurationshooter") {
+          ret.push_back (problemSolver()->configurationShooterType ());
+        } else if (w == "pathvalidation") {
+          ret.push_back (problemSolver()->pathValidationType (tol));
+        } else if (w == "steeringmethod") {
+          ret.push_back (problemSolver()->steeringMethodType ());
+        } else if (w == "problem") {
+          ret.push_back(server_->problemSolverMap()->selected_);
+        } else if (w == "type") {
+          ret = boost::assign::list_of ("PathOptimizer") ("PathProjector")
+            ("PathPlanner") ("ConfigurationShooter") ("SteeringMethod")
+            ("PathValidation") ("Problem");
+        } else {
+          throw Error ("Type not understood");
         }
-        return names;
+
+        return toNames_t (ret.begin(), ret.end());
+      }
+
+      // ---------------------------------------------------------------
+
+      void Problem::setParameter (const char* name, const CORBA::Any& value)
+        throw (Error)
+      {
+        if (problemSolver()->problem() != NULL) {
+          problemSolver()->problem()->setParameter (std::string(name),
+              BoostCorbaAny::boostize (value));
+          return;
+        }
+        throw Error ("No problem in the ProblemSolver");
+      }
+
+      // ---------------------------------------------------------------
+
+      CORBA::Any* Problem::getParameter (const char* name) throw (Error)
+      {
+        if (problemSolver()->problem() != NULL) {
+          boost::any val;
+          try {
+            val = problemSolver()->problem()->get<boost::any> (std::string(name));
+          } catch (const std::runtime_error& e) {
+            throw hpp::Error (e.what ());
+          }
+          CORBA::Any* ap = new CORBA::Any;
+          *ap = BoostCorbaAny::corbaize(val);
+          return ap;
+        }
+        throw Error ("No problem in the ProblemSolver");
       }
 
       // ---------------------------------------------------------------
@@ -714,7 +850,7 @@ namespace hpp
 	  problemSolver()->addNumericalConstraint
 	    (name, NumericalConstraint::create
 	     (Position::create (name, problemSolver()->robot(), joint,
-				targetInLocalFrame, targetInWorldFrame, I3,m)));
+				targetInLocalFrame, targetInWorldFrame, m)));
 	}
       }
 
@@ -874,6 +1010,17 @@ namespace hpp
 	  problemSolver()->resetConstraints ();
 	  problemSolver()->robot ()->controlComputation
 	    (model::Device::JOINT_POSITION);
+	} catch (const std::exception& exc) {
+	  throw hpp::Error (exc.what ());
+	}
+      }
+
+      // ---------------------------------------------------------------
+
+      void Problem::filterCollisionPairs () throw (hpp::Error)
+      {
+        try {
+          problemSolver()->filterCollisionPairs ();
 	} catch (const std::exception& exc) {
 	  throw hpp::Error (exc.what ());
 	}
@@ -1215,7 +1362,9 @@ namespace hpp
       // ---------------------------------------------------------------
 
       bool Problem::directPath (const hpp::floatSeq& startConfig,
-				const hpp::floatSeq& endConfig, UShort& pathId)
+				const hpp::floatSeq& endConfig,
+				CORBA::Boolean validate, UShort& pathId,
+				CORBA::String_out report)
 	throw (hpp::Error)
       {
 	ConfigurationPtr_t start;
@@ -1228,7 +1377,10 @@ namespace hpp
 	    problemSolver()->resetProblem ();
 	  }
           std::size_t pid;
-	  pathValid = problemSolver()->directPath (*start, *end, pid);
+	  std::string r;
+	  pathValid = problemSolver()->directPath (*start, *end, validate,
+						   pid, r);
+	  report = CORBA::string_dup(r.c_str ());
           pathId = (UShort) pid;
 	} catch (const std::exception& exc) {
 	  throw hpp::Error (exc.what ());
@@ -1238,16 +1390,19 @@ namespace hpp
 
       // ---------------------------------------------------------------
 
-      bool Problem::addConfigToRoadmap (const hpp::floatSeq& config) throw (hpp::Error)
+      void  Problem::addConfigToRoadmap (const hpp::floatSeq& config)
+	throw (hpp::Error)
       {
 	ConfigurationPtr_t configuration (floatSeqToConfig (problemSolver(), config));
-	return problemSolver()->addConfigToRoadmap (configuration);
+	problemSolver()->addConfigToRoadmap (configuration);
       }
 
       // ---------------------------------------------------------------
 
-      bool Problem::addEdgeToRoadmap (const hpp::floatSeq& config1, const hpp::floatSeq& config2, 
-				       UShort pathId, bool bothEdges) throw (hpp::Error)     
+      void Problem::addEdgeToRoadmap (const hpp::floatSeq& config1,
+				      const hpp::floatSeq& config2,
+				      UShort pathId, bool bothEdges)
+	throw (hpp::Error)
       {
         try {
 	  if (pathId >= problemSolver()->paths ().size ()) {
@@ -1260,10 +1415,12 @@ namespace hpp
 	  ConfigurationPtr_t start (floatSeqToConfig (problemSolver(), config1));
 	  ConfigurationPtr_t finish (floatSeqToConfig (problemSolver(), config2));
 	  if (bothEdges) {
-	    return (problemSolver()->addEdgeToRoadmap (start, finish, path) 
-	            && problemSolver()->addEdgeToRoadmap (finish, start, path->reverse()));
-	  }	  
-	  return problemSolver()->addEdgeToRoadmap (start, finish, path);
+	    problemSolver()->addEdgeToRoadmap (start, finish, path);
+	    problemSolver()->addEdgeToRoadmap (finish, start, path->reverse());
+	    return;
+	  }
+	  problemSolver()->addEdgeToRoadmap (start, finish, path);
+	  return;
 	} catch (const std::exception& exc) {
 	  throw hpp::Error (exc.what ());
 	}
@@ -1747,6 +1904,13 @@ namespace hpp
 	    hpp::core::ConnectedComponents_t::const_iterator itcc =
 	      connectedComponents.begin ();
             std::advance (itcc, connectedComponentId);
+	    if (itcc == connectedComponents.end ()) {
+	      std::ostringstream oss;
+	      oss << "connectedComponentId=" << connectedComponentId
+		  << " out of range [0," << connectedComponents.size () - 1
+		  << "].";
+	      throw std::runtime_error (oss.str ().c_str ());
+	    }
 	    nearest = problemSolver()->roadmap ()->nearestNode (configuration, *itcc, distance);
 	  }
           if (!nearest) throw hpp::Error ("Nearest node not found");
@@ -1796,10 +1960,18 @@ namespace hpp
         throw (hpp::Error)
       {
         try {
-          problemSolver()->roadmap (
-              hpp::core::parser::readRoadmap (std::string(filename),
-                problemSolver()->problem())
-              );
+          hpp::core::ProblemSolverPtr_t p = problemSolver();
+          hpp::core::parser::readRoadmap (std::string(filename),
+              p->roadmap(), p->problem());
+          // ProblemSolver should be update to use the init and goal nodes of
+          // the roadmap
+          if (p->roadmap()->initNode())
+            p->initConfig(p->roadmap()->initNode()->configuration());
+          const hpp::core::Nodes_t& goals = p->roadmap()->goalNodes();
+          p->resetGoalConfigs();
+          for (hpp::core::Nodes_t::const_iterator _goals = goals.begin();
+              _goals != goals.end(); ++_goals)
+            p->addGoalConfig ((*_goals)->configuration());
         } catch (const std::exception& exc) {
           throw hpp::Error (exc.what ());
         }

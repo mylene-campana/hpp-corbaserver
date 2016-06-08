@@ -26,6 +26,19 @@ module hpp
     ///             This is case insensitive.
     Names_t getAvailable (in string type) raises (Error);
 
+    /// Return a list of selected elements of type type
+    /// \param type enter "type" to know what types I know of.
+    ///             This is case insensitive.
+    /// \note For most of the types, the list will contain only one element.
+    Names_t getSelected (in string type) raises (Error);
+
+    /// Set a parameter
+    /// \param value the input type must be long, double, const char*
+    void setParameter (in string name, in any value) raises (Error);
+
+    /// Throw an exception when the parameter couldn't be found.
+    any getParameter (in string name) raises (Error);
+
     /// Select a problem by its name.
     /// If no problem with this name exists, a new problem is created and selected.
     /// \param name the problem name.
@@ -289,6 +302,16 @@ module hpp
 
     /// \}
 
+    /// \name Collision checking
+    /// \{
+
+    /// Build matrix of relative motions between joints
+    ///
+    /// See hpp::core::Problem::filterCollisionPairs.
+    void filterCollisionPairs () raises (Error);
+
+    /// \}
+
     /// \name Solve problem and get paths
     /// \{
 
@@ -357,20 +380,35 @@ module hpp
 
     /// Make direct connection between two configurations
     /// \param startConfig, endConfig: the configurations to link.
-    /// return TRUE if created path is fully valid.
-    /// \param pathId returns index of copmuted path in path vector.
+    /// \param validate whether path should be validated. If true, path
+    ///        validation is called and only valid part of path is inserted
+    ///        in the path vector.
+    /// \retval report the reason why the config is not valid.
+    /// \retval pathId returns index of copmuted path in path vector.
+    /// \return TRUE if created path is fully valid.
     boolean directPath (in floatSeq startConfig, in floatSeq endConfig,
-			out unsigned short pathId) raises (Error);
+			in boolean validate,
+			out unsigned short pathId, out string report)
+      raises (Error);
 
-    /// add \param config to roadmap. Creates a node.
-    boolean addConfigToRoadmap (in floatSeq config) raises(Error);
+    /// add a configuration to a roadmap
+    ///
+    /// \param config Configuration to add
+    ///
+    /// A node is created if necessary.
+    void addConfigToRoadmap (in floatSeq config) raises(Error);
 
-    /// add an edge to roadmap. If \param bothEdges is FALSE, only add
-    /// edge from \param config1 to \param config2. If TRUE. add edges
-    /// config1->config2 AND config2->config1.
-    boolean addEdgeToRoadmap (in floatSeq config1, in floatSeq config2,
-			      in unsigned short pathId, in boolean bothEdges) 
-	raises (Error);
+    /// Add an edge to the roadmap.
+    ///
+    /// \param config1 configuration of start node,
+    /// \param config2 configuration of destination node,
+    /// \param pathId index of the path to store in the edge in the path vector,
+    /// \param bothEdges whether to also insert edge from destination node to
+    ///        start node.
+    /// \sa hpp::core::ProblemSolver::addEdgeToRoadmap.
+    void addEdgeToRoadmap (in floatSeq config1, in floatSeq config2,
+			   in unsigned short pathId, in boolean bothEdges)
+      raises (Error);
 
     /// Append a path to an existing path
     /// \param pathId Id of the path in this problem,
@@ -461,8 +499,8 @@ module hpp
     ///	   	     If connectedComponentId is negative, function goes through all
     ///		     connected components looking for the nearest node (configuration).
     /// \param distance returns the one-dimensional distance between \param config and
-    ///              computed nearest node (configuration). 
-    floatSeq getNearestConfig(in floatSeq config, in long connectedComponentId, out double distance) 
+    ///              computed nearest node (configuration).
+    floatSeq getNearestConfig(in floatSeq config, in long connectedComponentId, out double distance)
 	raises (Error);
 
     /// Clear the roadmap

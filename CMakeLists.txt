@@ -30,6 +30,8 @@ SET(PROJECT_DESCRIPTION "Corba server for Humanoid Path Planner applications")
 SET(PROJECT_URL "ssh://trac.laas.fr/git/jrl/corba/hpp-corbaserver")
 
 SET(CLIENT_ONLY FALSE CACHE BOOL "Set to true to install the client only")
+# Ask Doxygen to create a tree view in html documentation
+SET(DOXYGEN_TREEVIEW "NO" CACHE STRING "Set to YES to generate a tree view in the html documentation")
 
 SET(${PROJECT_NAME}_HEADERS
   include/hpp/corbaserver/client.hh
@@ -38,7 +40,6 @@ IF (NOT CLIENT_ONLY)
   SET(${PROJECT_NAME}_HEADERS
     include/hpp/corbaserver/doc.hh
     include/hpp/corbaserver/fwd.hh
-    include/hpp/corbaserver/orb-singleton.hh
     include/hpp/corbaserver/problem-solver-map.hh
     include/hpp/corbaserver/server.hh
     ${${PROJECT_NAME}_HEADERS}
@@ -55,6 +56,7 @@ ENDIF()
 
 # Dependencies
 ADD_REQUIRED_DEPENDENCY("omniORB4 >= 4.1.4")
+ADD_REQUIRED_DEPENDENCY("omniDynamic4 >= 4.1.4")
 IF (NOT CLIENT_ONLY)
   ADD_REQUIRED_DEPENDENCY("hpp-core >= 3")
   ADD_REQUIRED_DEPENDENCY("hpp-model-urdf >= 3")

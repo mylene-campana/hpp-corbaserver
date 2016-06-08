@@ -35,6 +35,13 @@ namespace hpp
 
         virtual Names_t* getAvailable (const char* what) throw (hpp::Error);
 
+        virtual Names_t* getSelected (const char* what) throw (hpp::Error);
+
+        virtual void setParameter (const char* name, const CORBA::Any& value)
+          throw (Error);
+
+        virtual CORBA::Any* getParameter (const char* name) throw (Error);
+
         virtual bool selectProblem (const char* problemName) throw (hpp::Error);
 
 	virtual void
@@ -150,6 +157,7 @@ namespace hpp
 	virtual void lockJoint (const char* jointName,
 				const hpp::floatSeq& value)
 	  throw (hpp::Error);
+        virtual void filterCollisionPairs () throw (hpp::Error);
 	virtual void resetGoalConstraints () throw (hpp::Error);
 	virtual void setGoalNumericalConstraints
 	(const char* constraintName, const hpp::Names_t& constraintNames,
@@ -188,13 +196,18 @@ namespace hpp
 	virtual hpp::intSeq* solve () throw (hpp::Error);
 
 	virtual bool directPath (const hpp::floatSeq& startConfig,
-				  const hpp::floatSeq& endConfig, UShort& pathId)
+				 const hpp::floatSeq& endConfig,
+				 CORBA::Boolean validate,
+				 UShort& pathId,
+				 CORBA::String_out report)
 	  throw (hpp::Error);
 
-	virtual bool addConfigToRoadmap (const hpp::floatSeq& config) throw (hpp::Error);
+	virtual void addConfigToRoadmap (const hpp::floatSeq& config) throw (hpp::Error);
 
-	virtual bool addEdgeToRoadmap (const hpp::floatSeq& config1, const hpp::floatSeq& config2, 
-				       UShort pathId, bool bothEdges) throw (hpp::Error);
+	virtual void addEdgeToRoadmap (const hpp::floatSeq& config1,
+				       const hpp::floatSeq& config2,
+				       UShort pathId, bool bothEdges)
+	  throw (hpp::Error);
 
 	virtual void appendDirectPath (UShort pathId,
 				       const hpp::floatSeq& config)

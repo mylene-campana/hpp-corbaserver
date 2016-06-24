@@ -253,9 +253,6 @@ namespace hpp
 	virtual hpp::floatSeqSeq* sampleSubPath (UShort inPathId,
 						 UShort NbPointsPerSubPath) throw (hpp::Error);
 
-	virtual void setMaxVelocityLim (const Double vmax) throw (hpp::Error);
-	virtual void setFrictionCoef (const Double mu) throw (hpp::Error);
-	virtual hpp::intSeq* getResultValues () throw (hpp::Error);
 	virtual hpp::intSeq* getEdgeIndexVector () throw (hpp::Error);
 	virtual hpp::intSeq* getNodeIndexVector () throw (hpp::Error);
 	virtual hpp::floatSeqSeq* edgeToSampledPathVector (Long edgeId, 

@@ -2033,36 +2033,6 @@ namespace hpp
 
       // ---------------------------------------------------------------
 
-      void Problem::setMaxVelocityLim (const Double vmax) throw (hpp::Error)
-      {
-	problemSolver ()->problem ()->vmax_ = vmax;
-      }
-
-      // ---------------------------------------------------------------
-
-      void Problem::setFrictionCoef (const Double mu) throw (hpp::Error)
-      {
-	problemSolver ()->problem ()->mu_ = mu;
-      }
-
-      // ---------------------------------------------------------------
-
-      hpp::intSeq* Problem::getResultValues () throw (hpp::Error)
-      {
-	unsigned int vectorLength =
-	  problemSolver ()->problem ()->parabolaResults_.size ();
-	hpp::intSeq* resultValues = new hpp::intSeq();
-	resultValues->length((CORBA::ULong) vectorLength);
-	long result;
-	for (unsigned int i=0; i<vectorLength; i++) {
-	  result = problemSolver ()->problem ()->parabolaResults_ [i];
-	  (*resultValues) [i] = result;
-	}
-	return resultValues;
-      }
-
-      // ---------------------------------------------------------------
-
       hpp::intSeq* Problem::getEdgeIndexVector () throw (hpp::Error)
       {
 	std::vector<long> vector = problemSolver ()->roadmap ()->edgeIndexVector_;

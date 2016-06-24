@@ -525,15 +525,6 @@ module hpp
 			       in unsigned short NbPointsPerSubPath)
       raises (Error);
 
-    /// Set alphaInit_ parameter of Gradient-Based optimizer
-    void setMaxVelocityLim (in double vmax) raises (Error);
-
-    /// Set alphaInit_ parameter of Gradient-Based optimizer
-    void setFrictionCoef (in double mu) raises (Error);
-
-    /// Get vector of parabola result values from SM parabola
-    intSeq getResultValues () raises (Error);
-
     /// Get vector of edge indexes (in roadmap) from a solved problem
     intSeq getEdgeIndexVector () raises (Error);
 

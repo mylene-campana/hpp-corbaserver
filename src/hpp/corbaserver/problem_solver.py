@@ -473,3 +473,13 @@ class ProblemSolver (object):
         return self.client.problem.readRoadmap (filename)
 
     ## \}
+
+    ## Get paths from roadmap edges and return sampled configurations on them
+    # (Because not sure if returning a pathVector is a good idea (never seen it)
+    # \param NbPointsPerSubPath number of points on each edge-path
+    def edgeToSampledPathVector (self, edgeId, NbPointsPerSubPath):
+        return self.client.problem.edgeToSampledPathVector (edgeId, NbPointsPerSubPath)
+    ## \}
+
+    def sampleSubPath (self, pathId, NbPointsPerSubPath):
+        return self.client.problem.sampleSubPath (pathId, NbPointsPerSubPath)

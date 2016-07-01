@@ -235,6 +235,9 @@ class Robot (object):
         return self.client.robot.getJacobianCenterOfMass ()
     ##\}
 
+    def computeGlobalPosition (self):
+        return self.client.robot.computeGlobalPosition (transform, positionInJoint)
+
 ## Humanoid robot
 #
 #  Method loadModel builds a humanoid robot.

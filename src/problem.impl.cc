@@ -2104,6 +2104,16 @@ namespace hpp
 	  throw hpp::Error (exc.what ());
 	}
       }
+
+      // ---------------------------------------------------------------
+
+      void Problem::setPlannerIterLimit (ULong limit) {
+	problemSolver()->problem()->plannerIterLimit ((std::size_t) limit);
+      }
+
+      ULong Problem::getPlannerIterLimit () {
+	return problemSolver()->problem()->plannerIterLimit ();
+      }
 	  
     } // namespace impl
   } // namespace corbaServer

@@ -537,6 +537,12 @@ module hpp
     floatSeqSeq edgeToSampledPathVector (in long edgeId, 
 					 in unsigned short NbPointsPerSubPath)
       raises (Error);
+    
+    /// Set the limit of the planner number of iterations
+    void setPlannerIterLimit (in unsigned long limit);
+
+    /// Get the limit of the planner number of iterations
+    unsigned long getPlannerIterLimit ();
 
   };
   }; // interface Problem

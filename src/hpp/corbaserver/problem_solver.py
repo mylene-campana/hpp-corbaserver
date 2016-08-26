@@ -483,3 +483,11 @@ class ProblemSolver (object):
 
     def sampleSubPath (self, pathId, NbPointsPerSubPath):
         return self.client.problem.sampleSubPath (pathId, NbPointsPerSubPath)
+
+    ## Set the limit of the planner number of iterations
+    def setPlannerIterLimit (self, limit):
+        return self.client.problem.setPlannerIterLimit (limit)
+
+    ## Get the limit of the planner number of iterations
+    def getPlannerIterLimit (self):
+        return self.client.problem.getPlannerIterLimit ()

@@ -257,6 +257,8 @@ namespace hpp
 	virtual hpp::intSeq* getNodeIndexVector () throw (hpp::Error);
 	virtual hpp::floatSeqSeq* edgeToSampledPathVector (Long edgeId, 
 	UShort NbPointsPerSubPath) throw (hpp::Error);
+	virtual void setPlannerIterLimit (const ULong limit);
+	virtual ULong getPlannerIterLimit ();
 
       private:
         /// Return the selected problem solver

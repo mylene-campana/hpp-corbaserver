@@ -202,6 +202,12 @@ module hpp
     void setDimensionExtraConfigSpace (in unsigned long dimension)
       raises (Error);
 
+    /// Get the dimension of the extra configuration space
+    ///
+    /// \sa hpp::model::ExtraConfigSpace
+    short getDimensionExtraConfigSpace ()
+      raises (Error);
+
     /// Set bounds of extra configuration variables
     /// \param inJointBound sequence of joint dof bounds in order
     ///        [v0_min,v0_max,v1_min,v1_max,...].
@@ -399,6 +405,10 @@ module hpp
     /// \return size of extra-configuration-space
     short getExtraConfigSize () raises (Error);
 
+
+    /// Convert a direction vector to a quaternion (use Eigen::Quaterniond::FromTwoVectors with Z vector)
+    /// \param u the vector director
+    floatSeq quaternionFromVector(in floatSeq u)raises (Error);
   };
   };
 };

@@ -34,16 +34,24 @@ module hpp
 
     /// Set a parameter
     /// \param value the input type must be long, double, const char*
-    void setParameter (in string name, in any value) raises (Error);
+    void setParameter (in string name, in double value) raises (Error);
 
     /// Throw an exception when the parameter couldn't be found.
-    any getParameter (in string name) raises (Error);
+    double getParameter (in string name) raises (Error);
 
     /// Select a problem by its name.
     /// If no problem with this name exists, a new problem is created and selected.
     /// \param name the problem name.
     /// \return true if a new problem was created.
     boolean selectProblem (in string name) raises (Error);
+
+    /// Move a path from the current problem to another problem.
+    /// \param problemName the destination problem
+    /// \param jointNames a list of joint names representing the subchain to
+    ///        extract from the original path.
+    /// \todo the configuration parameter can be selected but not reorganized.
+    void movePathToProblem (in unsigned short pathId, in string problemName,
+        in Names_t jointNames) raises (Error);
 
     /// \name Initial and goal configurations
     /// \{
@@ -294,8 +302,14 @@ module hpp
     void lockJoint (in string jointName, in floatSeq value)
       raises (Error);
 
+    /// Get error threshold in numerical constraint resolution
+    double getErrorThreshold () raises (Error);
+
     /// Set error threshold in numerical constraint resolution
     void setErrorThreshold (in double threshold) raises (Error);
+
+    /// Set maximal number of iterations in numerical constraint resolution
+    unsigned short getMaxIterations () raises (Error);
 
     /// Set maximal number of iterations in numerical constraint resolution
     void setMaxIterations (in unsigned short iterations) raises (Error);
@@ -326,6 +340,13 @@ module hpp
     ///        "BasicConfigurationShooter" or any type added by method
     ///        core::ProblemSolver::addConfigurationShooterType
     void selectConFigurationShooter (in string configurationShooterType) raises (Error);
+
+    /// Select distance type
+    /// \param Name of the distance type, either
+    ///        "WeighedDistance" or any type added by method
+    ///        core::ProblemSolver::addDistanceType
+    void selectDistance (in string distanceType) raises (Error);
+
 
     /// Select steering method type
     /// \param Name of the steering method type, either
@@ -420,6 +441,17 @@ module hpp
     void appendDirectPath (in unsigned short pathId, in floatSeq config)
       raises (Error);
 
+    /// Concatenate path endId at the end of startId.
+    /// \note No path are created. The resulting path is at rank startId.
+    void concatenatePath (in unsigned short startId, in unsigned short endId)
+      raises (Error);
+
+    /// Erase path pathId from stored.
+    void erasePath (in unsigned short pathId)
+      raises (Error);
+
+    /// Apply the path projector method to the path
+    /// \return true in case of success.
     boolean projectPath (in unsigned short patId) raises (Error);
 
     /// Get Number of paths

@@ -14,6 +14,7 @@
 #include <boost/date_time/posix_time/posix_time_types.hpp>
 #include <boost/assign/list_of.hpp>
 #include <boost/algorithm/string.hpp>    
+#include <boost/icl/interval_set.hpp>
 
 #include <hpp/util/debug.hh>
 #include <hpp/util/portability.hh>
@@ -35,6 +36,7 @@
 #include <hpp/core/path-validation-report.hh>
 #include <hpp/core/straight-path.hh>
 #include <hpp/core/path.hh>
+#include <hpp/core/subchain-path.hh>
 #include <hpp/core/roadmap.hh>
 #include <hpp/core/problem-solver.hh>
 #include <hpp/core/steering-method.hh>
@@ -83,6 +85,33 @@ using hpp::constraints::StaticStability;
 using hpp::constraints::StaticStabilityPtr_t;
 
 using hpp::core::NumericalConstraint;
+
+namespace boost {
+  namespace icl {
+    template<>
+      struct interval_traits< hpp::core::SizeInterval_t >
+      {
+        typedef hpp::core::SizeInterval_t interval_type;
+        typedef hpp::core::size_type      domain_type;
+        typedef std::less<domain_type>    domain_compare;
+
+        static interval_type construct(const domain_type& lo, const domain_type& up) 
+        { return interval_type(lo, up - lo); }
+
+        static domain_type lower(const interval_type& inter){ return inter.first; };
+        static domain_type upper(const interval_type& inter){ return inter.first + inter.second; };
+      };
+
+    template<>
+      struct interval_bound_type<hpp::core::SizeInterval_t>
+      {
+        typedef interval_bound_type type;
+        BOOST_STATIC_CONSTANT(bound_type, value = interval_bounds::static_right_open);//[lo..up)
+      };
+
+  } // namespace icl
+} // namespace boost
+
 
 namespace hpp
 {
@@ -217,6 +246,19 @@ namespace hpp
         template <> inline
           const char* BoostCorbaAny::as<std::string, const char*> (std::string f)
           { return f.c_str(); }
+
+        typedef hpp::core::SizeInterval_t SizeInterval_t;
+        typedef hpp::core::SizeIntervals_t SizeIntervals_t;
+        typedef boost::icl::interval_set<size_type, std::less, SizeInterval_t>
+          BoostIntervalSet_t;
+
+        SizeIntervals_t convertInterval (const BoostIntervalSet_t& intSet)
+        {
+          SizeIntervals_t ret;
+          for (BoostIntervalSet_t::const_iterator _int = intSet.begin (); _int != intSet.end (); ++_int)
+            ret.push_back(*_int);
+          return ret;
+        }
       }
 
       // ---------------------------------------------------------------
@@ -253,6 +295,8 @@ namespace hpp
           ret = problemSolver()->getKeys <core::PathValidationBuilder_t, Ret_t> ();
         } else if (w == "steeringmethod") {
           ret = problemSolver()->getKeys <core::SteeringMethodBuilder_t, Ret_t> ();
+        } else if (w == "distance") {
+          ret = problemSolver()->getKeys <core::DistanceBuilder_t, Ret_t> ();
         } else if (w == "numericalconstraint") {
           ret = problemSolver()->getKeys <core::NumericalConstraintPtr_t, Ret_t> ();
         } else if (w == "problem") {
@@ -260,10 +304,10 @@ namespace hpp
         } else if (w == "parameter") {
           if (problemSolver()->problem() == NULL)
             throw Error ("No problem in the ProblemSolver");
-          ret = problemSolver()->problem()->getKeys <boost::any, Ret_t> ();
+          ret = problemSolver()->problem()->getKeys <double, Ret_t> ();
         } else if (w == "type") {
           ret = boost::assign::list_of ("PathOptimizer") ("PathProjector")
-            ("PathPlanner") ("ConfigurationShooter") ("SteeringMethod")
+            ("PathPlanner") ("ConfigurationShooter") ("Distance") ("SteeringMethod")
             ("PathValidation") ("NumericalConstraint")("Problem")("Parameter");
         } else {
           throw Error ("Type not understood");
@@ -294,13 +338,15 @@ namespace hpp
           ret.push_back (problemSolver()->configurationShooterType ());
         } else if (w == "pathvalidation") {
           ret.push_back (problemSolver()->pathValidationType (tol));
+        } else if (w == "distance") {
+          ret.push_back (problemSolver()->distanceType());
         } else if (w == "steeringmethod") {
           ret.push_back (problemSolver()->steeringMethodType ());
         } else if (w == "problem") {
           ret.push_back(server_->problemSolverMap()->selected_);
         } else if (w == "type") {
           ret = boost::assign::list_of ("PathOptimizer") ("PathProjector")
-            ("PathPlanner") ("ConfigurationShooter") ("SteeringMethod")
+            ("PathPlanner") ("ConfigurationShooter") ("Distance") ("SteeringMethod")
             ("PathValidation") ("Problem");
         } else {
           throw Error ("Type not understood");
@@ -311,12 +357,15 @@ namespace hpp
 
       // ---------------------------------------------------------------
 
-      void Problem::setParameter (const char* name, const CORBA::Any& value)
+      void Problem::setParameter (const char* name, ::CORBA::Double value)
         throw (Error)
       {
         if (problemSolver()->problem() != NULL) {
-          problemSolver()->problem()->setParameter (std::string(name),
-              BoostCorbaAny::boostize (value));
+          try {
+            problemSolver()->problem()->setParameter (std::string(name),value);
+          } catch (const std::exception& e) {
+            throw hpp::Error (e.what ());
+          }
           return;
         }
         throw Error ("No problem in the ProblemSolver");
@@ -324,18 +373,16 @@ namespace hpp
 
       // ---------------------------------------------------------------
 
-      CORBA::Any* Problem::getParameter (const char* name) throw (Error)
+      ::CORBA::Double Problem::getParameter (const char* name) throw (Error)
       {
         if (problemSolver()->problem() != NULL) {
-          boost::any val;
+          Double val;
           try {
-            val = problemSolver()->problem()->get<boost::any> (std::string(name));
-          } catch (const std::runtime_error& e) {
+            val = problemSolver()->problem()->get<double> (std::string(name));
+          } catch (const std::exception& e) {
             throw hpp::Error (e.what ());
           }
-          CORBA::Any* ap = new CORBA::Any;
-          *ap = BoostCorbaAny::corbaize(val);
-          return ap;
+          return val;
         }
         throw Error ("No problem in the ProblemSolver");
       }
@@ -350,6 +397,38 @@ namespace hpp
         if (!has) psMap->map_[psName] = core::ProblemSolver::create ();
         psMap->selected_ = psName;
         return !has;
+      }
+
+      // ---------------------------------------------------------------
+
+      void Problem::movePathToProblem (UShort pathId, const char* name,
+          const Names_t& jointNames) throw (hpp::Error)
+      {
+        ProblemSolverMapPtr_t psMap (server_->problemSolverMap());
+        if (!psMap->has (std::string(name))) throw Error ("No ProblemSolver of this name");
+        core::ProblemSolverPtr_t current = problemSolver(),
+                                 other = psMap->map_[std::string(name)];
+
+        BoostIntervalSet_t ints;
+        for (CORBA::ULong i = 0; i < jointNames.length (); ++i) {
+          JointPtr_t joint = problemSolver()->robot ()->getJointByName(std::string(jointNames[i]));
+          if (joint == NULL) throw hpp::Error ("Joint not found.");
+          ints.insert(SizeInterval_t(joint->rankInConfiguration(), joint->configSize()));
+        }
+        SizeIntervals_t intervals = convertInterval(ints);
+
+        if (pathId >= current->paths().size()) {
+          std::ostringstream oss ("wrong path id: ");
+          oss << pathId << ", number path: "
+            << current->paths ().size () << ".";
+          throw Error (oss.str().c_str());
+        }
+        core::SubchainPathPtr_t nPath =
+          core::SubchainPath::create (current->paths()[pathId], intervals);
+        core::PathVectorPtr_t pv =
+            core::PathVector::create(nPath->outputSize(), nPath->outputDerivativeSize());
+        pv->appendPath(nPath);
+        other->addPath(pv);
       }
 
       // ---------------------------------------------------------------
@@ -1207,9 +1286,22 @@ namespace hpp
 
       // ---------------------------------------------------------------
 
+      Double Problem::getErrorThreshold () throw (Error)
+      {
+	return problemSolver()->errorThreshold ();
+      }
+
+      // ---------------------------------------------------------------
+
       void Problem::setErrorThreshold (Double threshold) throw (Error)
       {
 	problemSolver()->errorThreshold (threshold);
+      }
+
+      // ---------------------------------------------------------------
+      UShort Problem::getMaxIterations () throw (Error)
+      {
+	return (UShort) problemSolver()->maxIterations ();
       }
 
       // ---------------------------------------------------------------
@@ -1237,6 +1329,18 @@ namespace hpp
       {
     try {
       problemSolver()->configurationShooterType (std::string (configurationShooterType));
+    } catch (const std::exception& exc) {
+      throw hpp::Error (exc.what ());
+    }
+      }
+
+      // ---------------------------------------------------------------
+
+      void Problem::selectDistance (const char* distanceType)
+    throw (Error)
+      {
+    try {
+      problemSolver()->distanceType(std::string (distanceType));
     } catch (const std::exception& exc) {
       throw hpp::Error (exc.what ());
     }
@@ -1455,6 +1559,43 @@ namespace hpp
 	    throw hpp::Error (oss.str ().c_str ());
 	  }
 	  path->appendPath (dp);
+	} catch (const std::exception& exc) {
+	  throw hpp::Error (exc.what ());
+	}
+      }
+
+      // ---------------------------------------------------------------
+
+      void Problem::concatenatePath (UShort startId, UShort endId)
+	throw (hpp::Error)
+      {
+	try {
+          if ( startId >= problemSolver()->paths ().size ()
+              || endId >= problemSolver()->paths ().size ()) {
+	    std::ostringstream oss ("wrong path id. ");
+	    oss << "Number path: " << problemSolver()->paths ().size () << ".";
+	    throw std::runtime_error (oss.str ());
+	  }
+	  PathVectorPtr_t start = problemSolver()->paths () [startId];
+	  PathVectorPtr_t end   = problemSolver()->paths () [  endId];
+          start->concatenate(*end);
+	} catch (const std::exception& exc) {
+	  throw hpp::Error (exc.what ());
+	}
+      }
+
+      // ---------------------------------------------------------------
+
+      void Problem::erasePath (UShort pathId)
+	throw (hpp::Error)
+      {
+	try {
+          if (pathId >= problemSolver()->paths ().size ()) {
+	    std::ostringstream oss ("wrong path id. ");
+	    oss << "Number path: " << problemSolver()->paths ().size () << ".";
+	    throw std::runtime_error (oss.str ());
+	  }
+	  problemSolver()->erasePath(pathId);
 	} catch (const std::exception& exc) {
 	  throw hpp::Error (exc.what ());
 	}

@@ -138,6 +138,21 @@ class ProblemSolver (object):
         return self.client.problem.createOrientationConstraint \
             (constraintName, joint1Name, joint2Name, p, mask)
 
+    ## Create transformation constraint between two joints
+    #
+    #  \param constraintName name of the constraint created,
+    #  \param joint1Name name of first joint
+    #  \param joint2Name name of second joint
+    #  \param ref desired transformation of joint2 in the frame of joint1.
+    #  \param mask Select which axis to be constrained.
+    #  If joint1 of joint2 is "", the corresponding joint is replaced by
+    #  the global frame.
+    #  constraints are stored in ProblemSolver object
+    def createTransformationConstraint (self, constraintName, joint1Name,
+                                        joint2Name, ref, mask) :
+        return self.client.problem.createTransformationConstraint \
+            (constraintName, joint1Name, joint2Name, ref, mask)
+
     ## Create RelativeCom constraint between two joints
     #
     #  \param constraintName name of the constraint created,
@@ -262,6 +277,22 @@ class ProblemSolver (object):
     def addPassiveDofs (self, name, dofNames):
         return self.client.problem.addPassiveDofs (name, dofNames)
 
+    ## (Dis-)Allow to modify right hand side of a numerical constraint
+    #  \param constraintName Name of the numerical constraint,
+    #  \param constant whether right hand side is constant
+    #
+    #  Constraints should have been added in the ProblemSolver local map,
+    #  but not inserted in the config projector.
+    def setConstantRightHandSide (self, constraintName, constant) :
+        return self.client.problem.setConstantRightHandSide (constraintName,
+                                                             constant)
+
+    ## Get whether right hand side of a numerical constraint is constant
+    #  \param constraintName Name of the numerical constraint,
+    #  \return whether right hand side is constant
+    def getConstantRightHandSide (self, constraintName) :
+        return self.client.problem.getConstantRightHandSide (constraintName)
+
     ## Generate a configuration satisfying the constraints
     #
     #  \param maxIter maximum number of tries,
@@ -277,13 +308,20 @@ class ProblemSolver (object):
         return self.client.problem.lockJoint (jointName, value)
 
     ## error threshold in numerical constraint resolution
+    def getErrorThreshold (self):
+        return self.client.problem.getErrorThreshold ()
+
+    ## error threshold in numerical constraint resolution
     def setErrorThreshold (self, threshold):
         return self.client.problem.setErrorThreshold (threshold)
 
     ## Set the maximal number of iterations
+    def getMaxIterations (self):
+	return self.client.problem.getMaxIterations ()
+
+    ## Set the maximal number of iterations
     def setMaxIterations (self, iterations):
 	return self.client.problem.setMaxIterations (iterations)
-
     ## \}
 
     ## \name Collision Checking
@@ -334,12 +372,23 @@ class ProblemSolver (object):
     def selectPathProjector (self, pathProjectorType, tolerance):
         return self.client.problem.selectPathProjector (pathProjectorType,
                                                         tolerance)
+
+
+    ##  Select distance type
+    #   \param Name of the distance type, either
+    #      "WeighedDistance" or any type added by method
+    #      core::ProblemSolver::addDistanceType
+    def selectDistance (self, distanceType):
+        return self.client.problem.selectDistance (distanceType)
+
+
     ##  Select steering method type
     #   \param Name of the steering method type, either
     #      "SteeringMethodStraight" or any type added by method
     #      core::ProblemSolver::addSteeringMethodType
     def selectSteeringMethod (self, steeringMethodType):
         return self.client.problem.selectSteeringMethod (steeringMethodType)
+
 
     def prepareSolveStepByStep (self):
         return self.client.problem.prepareSolveStepByStep ()
@@ -363,6 +412,11 @@ class ProblemSolver (object):
     #  \return the path index of the collission-free part from startConfig
     def directPath (self, startConfig, endConfig, validate):
         return self.client.problem.directPath (startConfig, endConfig, validate)
+
+    ## Project path using the path projector.
+    # \return True in case of success, False otherwise.
+    def projectPath (self, pathId):
+        return self.client.problem.projectPath (pathId)
 
     ## Get Number of paths
     def numberPaths (self):

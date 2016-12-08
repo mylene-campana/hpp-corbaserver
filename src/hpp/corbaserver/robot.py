@@ -238,6 +238,16 @@ class Robot (object):
     def computeGlobalPosition (self):
         return self.client.robot.computeGlobalPosition (transform, positionInJoint)
 
+    ## Get the dimension of the extra configuration space
+    def getDimensionExtraConfigSpace(self):
+        return self.client.robot.getDimensionExtraConfigSpace()
+
+    ## Convert a direction vector to a quaternion (use Eigen::Quaterniond::FromTwoVectors with Z vector)
+    # \param u the vector director
+    def quaternionFromVector(self,vector):
+        return self.client.robot.quaternionFromVector(vector)
+
+
 ## Humanoid robot
 #
 #  Method loadModel builds a humanoid robot.

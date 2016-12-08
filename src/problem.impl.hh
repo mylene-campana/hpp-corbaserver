@@ -37,12 +37,15 @@ namespace hpp
 
         virtual Names_t* getSelected (const char* what) throw (hpp::Error);
 
-        virtual void setParameter (const char* name, const CORBA::Any& value)
+        virtual void setParameter (const char* name, ::CORBA::Double value)
           throw (Error);
 
-        virtual CORBA::Any* getParameter (const char* name) throw (Error);
+        virtual ::CORBA::Double getParameter(const char* name) throw (Error);
 
         virtual bool selectProblem (const char* problemName) throw (hpp::Error);
+
+        virtual void movePathToProblem (UShort pathId, const char* problemName,
+            const Names_t& jointNames) throw (hpp::Error);
 
 	virtual void
 	setRandomSeed (const Long seed) throw (hpp::Error) {
@@ -166,7 +169,9 @@ namespace hpp
 	virtual void addGoalLockJoint (const char* jointName,
 				const hpp::floatSeq& value)
 	  throw (hpp::Error);
+	virtual Double getErrorThreshold () throw (Error);
 	virtual void setErrorThreshold (Double threshold) throw (Error);
+	virtual UShort getMaxIterations () throw (Error);
 	virtual void setMaxIterations (UShort iterations) throw (Error);
 
 	virtual void addPathOptimizer (const char* pathOptimizerType)
@@ -182,6 +187,9 @@ namespace hpp
 
 	virtual void selectPathPlanner (const char* pathPlannerType)
 	  throw (Error);
+
+    virtual void selectDistance (const char* distanceType)
+      throw (Error);
 
     virtual void selectSteeringMethod (const char* steeringMethodType)
       throw (Error);
@@ -212,6 +220,12 @@ namespace hpp
 	virtual void appendDirectPath (UShort pathId,
 				       const hpp::floatSeq& config)
 	  throw (hpp::Error);
+
+        virtual void concatenatePath (UShort startId, UShort endId)
+          throw (hpp::Error);
+
+        virtual void erasePath (UShort pathId)
+          throw (hpp::Error);
 
 	virtual bool projectPath (UShort pathId)
 	  throw (hpp::Error);

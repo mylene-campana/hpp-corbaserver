@@ -820,6 +820,20 @@ namespace hpp
         }
       }
 
+      Short Robot::getDimensionExtraConfigSpace()
+  throw (hpp::Error)
+      {
+  // Get robot in ProblemSolver object.
+        Short dim;
+        try {
+          DevicePtr_t robot = getRobotOrThrow(problemSolver());
+          dim = robot->extraConfigSpace().dimension();
+        } catch (const std::exception& exc) {
+          throw hpp::Error (exc.what ());
+        }
+        return dim;
+      }
+
       // --------------------------------------------------------------------
 
       void Robot::setExtraConfigSpaceBounds
@@ -1403,6 +1417,7 @@ namespace hpp
         problemSolver()->addCenterOfMassComputation (std::string (comName), comc);
       }
 
+
       // --------------------------------------------------------------------
 
       hpp::floatSeq* Robot::computeGlobalPosition (const Double* transform,
@@ -1467,6 +1482,19 @@ namespace hpp
 	  hppDout (error, exc.what ());
 	  throw hpp::Error (exc.what ());
 	}
+      }
+
+      hpp::floatSeq* Robot::quaternionFromVector (const floatSeq& u)throw (hpp::Error){
+        Eigen::Quaterniond quat = Eigen::Quaterniond::FromTwoVectors(Eigen::Vector3d::UnitX(),Eigen::Vector3d(u[0],u[1],u[2]));
+        hpp::floatSeq *quatCorba;
+        quatCorba = new hpp::floatSeq();
+        quatCorba->length((CORBA::ULong) 4);
+        (*quatCorba)[(CORBA::ULong)0]=quat.w();
+        (*quatCorba)[(CORBA::ULong)1]=quat.x();
+        (*quatCorba)[(CORBA::ULong)2]=quat.y();
+        (*quatCorba)[(CORBA::ULong)3]=quat.z();
+        return quatCorba;
+
       }
 
     } // end of namespace impl.

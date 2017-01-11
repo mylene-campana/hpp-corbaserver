@@ -576,6 +576,11 @@ module hpp
     /// Get the limit of the planner number of iterations
     unsigned long getPlannerIterLimit ();
 
+    /// Get the mean computation time of collision-checking for N random configs
+    floatSeq getMeanCollisionTimes (in unsigned long N);
+
+    /// Get the mean computation time of distances for N random configs
+    double getMeanDistanceTimes (in unsigned long N);
   };
   }; // interface Problem
 }; // module hpp

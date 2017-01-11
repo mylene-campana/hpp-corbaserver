@@ -23,6 +23,7 @@
 
 #include <hpp/model/configuration.hh>
 #include <hpp/core/config-projector.hh>
+#include <hpp/core/config-validations.hh>
 #include <hpp/core/basic-configuration-shooter.hh>
 #include <hpp/core/connected-component.hh>
 #include <hpp/core/edge.hh>
@@ -2255,7 +2256,58 @@ namespace hpp
       ULong Problem::getPlannerIterLimit () {
 	return problemSolver()->problem()->plannerIterLimit ();
       }
-	  
+
+      // ---------------------------------------------------------------
+      
+      floatSeq* Problem::getMeanCollisionTimes (const ULong N) {
+	Double time, mean = 0;
+	struct timespec start, end;
+	Configuration_t config;
+	const DevicePtr_t robot = problemSolver ()->robot ();
+	hpp::core::BasicConfigurationShooterPtr_t shooter
+	  = core::BasicConfigurationShooter::create (robot);
+	core::ValidationReportPtr_t validationReport;
+	ULong nbValidConfigs = 0;
+	for (std::size_t i = 0; i < N; i++) {
+	  ConfigurationPtr_t config = shooter->shoot();
+	  clock_gettime(CLOCK_MONOTONIC, &start);
+	  const bool valid = problemSolver()->problem ()->configValidations ()->validate (*config, validationReport);
+	  clock_gettime(CLOCK_MONOTONIC, &end);
+	  time = end.tv_sec - start.tv_sec + (end.tv_nsec - start.tv_nsec) / BILLION;
+	  mean = mean + time;
+	  if (valid)
+	    nbValidConfigs++;
+	}
+	mean = mean/N;
+	hpp::floatSeq* result = new hpp::floatSeq ();
+	result->length (2);
+	(*result) [0] = mean;
+	(*result) [1] = 100*nbValidConfigs/N;
+	return result;
+      }
+
+      Double Problem::getMeanDistanceTimes (const ULong N) {
+	Double time, result = 0;
+	struct timespec start, end;
+	Configuration_t config;
+	const DevicePtr_t robot = problemSolver ()->robot ();
+	hpp::core::BasicConfigurationShooterPtr_t shooter
+	  = core::BasicConfigurationShooter::create (robot);
+	core::ValidationReportPtr_t validationReport;
+	for (std::size_t i = 0; i < N; i++) {
+	  ConfigurationPtr_t config = shooter->shoot();
+	  clock_gettime(CLOCK_MONOTONIC, &start);
+	  robot->currentConfiguration (*config);
+	  robot->computeForwardKinematics ();
+	  problemSolver()->distanceBetweenObjects (); // robot-obstacles
+	  robot->computeDistances (); // auto-distances
+	  clock_gettime(CLOCK_MONOTONIC, &end);
+	  time = end.tv_sec - start.tv_sec + (end.tv_nsec - start.tv_nsec) / BILLION;
+	  result = result + time;
+	}
+	return result/N;
+      }
+
     } // namespace impl
   } // namespace corbaServer
 } // namespace hpp

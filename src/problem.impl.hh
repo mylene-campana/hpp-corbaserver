@@ -273,6 +273,8 @@ namespace hpp
 	UShort NbPointsPerSubPath) throw (hpp::Error);
 	virtual void setPlannerIterLimit (const ULong limit);
 	virtual ULong getPlannerIterLimit ();
+	virtual floatSeq* getMeanCollisionTimes (const ULong N);
+	virtual Double getMeanDistanceTimes (const ULong N);
 
       private:
         /// Return the selected problem solver

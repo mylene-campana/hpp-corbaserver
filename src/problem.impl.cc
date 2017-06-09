@@ -2348,6 +2348,66 @@ namespace hpp
       {
 	problemSolver ()->problem ()->alphaInit_ = val;
       }
+
+      // ---------------------------------------------------------------
+
+      hpp::floatSeqSeq* Problem::sampleSubPathCom (UShort pathId,
+						UShort NbPointsPerSubPath)
+	throw (hpp::Error)
+      {
+	try {
+	  if (pathId >= problemSolver ()->paths ().size ()) {
+	    std::ostringstream oss ("wrong path id: ");
+	    oss << pathId << ", number path: "
+		<< problemSolver ()->paths ().size () << ".";
+	    throw std::runtime_error (oss.str ().c_str ());
+	  }
+	  DevicePtr_t robot = problemSolver ()->robot ();
+	  const CORBA::ULong configSize = robot->configSize();
+	  PathVectorPtr_t path = problemSolver ()->paths () [pathId];
+	  std::size_t num_subpaths  = (*path).numberPaths ();
+	  std::vector<Configuration_t> configs;
+	  bool success;
+
+	  for (std::size_t i = 0; i < num_subpaths; ++i) {
+	    PathPtr_t subpath = (*path).pathAtRank(i);
+	    Double subLength = subpath->length (); // for t instead of x
+	    //Double subLength = subpath->end ()[0] - subpath->initial ()[0];
+	    Double stepSize = subLength / NbPointsPerSubPath;
+	    //hppDout (info, "stepSize: " << stepSize);
+	    Double t = 0;
+	    for (std::size_t j = 0; j< NbPointsPerSubPath; j++) {
+	      t = j * stepSize;
+	      Configuration_t q = (*subpath) (t, success);
+	      robot->currentConfiguration (q);
+	      robot->computeForwardKinematics ();
+	      Configuration_t comQ = robot->positionCenterOfMass ();
+	      configs.push_back (comQ);
+	    }
+	  }
+	  robot->currentConfiguration ((*path) (path->length(), success));
+	  robot->computeForwardKinematics ();
+	  configs.push_back (robot->positionCenterOfMass ()); // last config
+	  // modify configsequence
+	  hpp::floatSeqSeq *configSequence;
+	  configSequence = new hpp::floatSeqSeq ();
+	  configSequence->length ((CORBA::ULong) configs.size ());
+	  hpp::floatSeq* dofArray;
+	  dofArray = new hpp::floatSeq ();
+	  dofArray->length (configSize);
+	  for (std::size_t i = 0; i < configs.size (); i++) {
+	    dofArray = vectorToFloatseq (configs [i]);
+	    //hppDout (info, "configs [i]: " << displayConfig (configs [i]));
+	    (*configSequence) [(CORBA::ULong)i] = *dofArray;
+	  }
+	  
+	  return configSequence;
+	}
+	catch (const std::exception& exc) {
+	  throw hpp::Error (exc.what ());
+	}
+      }
+
     } // namespace impl
   } // namespace corbaServer
 } // namespace hpp

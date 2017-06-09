@@ -597,6 +597,12 @@ module hpp
     /// Set alphaInit_ parameter of Gradient-Based optimizer
     void setAlphaInit (in double val) raises (Error);
     /// \}
+
+    /// Get way points of a path
+    /// \param pathId rank of the path in the problem
+    floatSeqSeq sampleSubPathCom (in unsigned short pathId,
+				  in unsigned short NbPointsPerSubPath) raises (Error);
+
   };
   }; // interface Problem
 }; // module hpp

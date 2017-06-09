@@ -545,3 +545,6 @@ class ProblemSolver (object):
     ## Get the limit of the planner number of iterations
     def getPlannerIterLimit (self):
         return self.client.problem.getPlannerIterLimit ()
+
+    def sampleSubPathCom (self, pathId, NbPointsPerSubPath):
+        return self.client.problem.sampleSubPathCom (pathId, NbPointsPerSubPath)

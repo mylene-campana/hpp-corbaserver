@@ -279,6 +279,7 @@ namespace hpp
 	virtual hpp::floatSeq* getTimeValues () throw (hpp::Error);
 	virtual hpp::floatSeq* getGainValues () throw (hpp::Error);
 	virtual void setAlphaInit (const Double val) throw (hpp::Error);
+	virtual hpp::floatSeqSeq* sampleSubPathCom (UShort inPathId, UShort NbPointsPerSubPath) throw (hpp::Error);
 
       private:
         /// Return the selected problem solver
